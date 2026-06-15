@@ -42,7 +42,7 @@
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-xl: var(--radius);
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
@@ -70,9 +70,9 @@
   --chart-1: oklch(0.50 0.155 168);
   --chart-2: oklch(0.60 0.13 168);
   --chart-3: oklch(0.70 0.10 168);
-  --chart-4: oklch(0.40 0.13 168);
-  --chart-5: oklch(0.80 0.07 168);
-  --radius: 0.625rem;
+  --chart-4: oklch(0.40 0.13 200);
+  --chart-5: oklch(0.78 0.09 140);
+  --radius: 0.875rem;
   --sidebar: oklch(0.22 0.05 168);
   --sidebar-foreground: oklch(0.95 0.01 168);
   --sidebar-primary: oklch(0.55 0.155 168);
@@ -105,8 +105,8 @@
   --chart-1: oklch(0.60 0.155 168);
   --chart-2: oklch(0.70 0.12 168);
   --chart-3: oklch(0.50 0.12 168);
-  --chart-4: oklch(0.80 0.08 168);
-  --chart-5: oklch(0.40 0.10 168);
+  --chart-4: oklch(0.55 0.13 200);
+  --chart-5: oklch(0.80 0.10 140);
   --sidebar: oklch(0.18 0.03 168);
   --sidebar-foreground: oklch(0.95 0.01 168);
   --sidebar-primary: oklch(0.60 0.155 168);

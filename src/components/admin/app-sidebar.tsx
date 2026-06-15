@@ -1,15 +1,18 @@
-"use client";
+"use client"
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
   Bike,
-  CreditCard,
+  Bot,
   LayoutDashboard,
-  PackageSearch,
-  ShoppingCart,
+  Package,
+  Store,
+  TrendingUp,
   Truck,
-} from "lucide-react";
+  Users,
+  Wallet,
+} from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -20,22 +23,25 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar";
+} from "@/components/ui/sidebar"
 
-const navigation = [
-  { title: "Resumen", href: "/admin", icon: LayoutDashboard },
-  { title: "Compras", href: "/admin/apps/buyer", icon: ShoppingCart },
-  { title: "Ventas", href: "/admin/apps/seller", icon: PackageSearch },
-  { title: "Envíos", href: "/admin/apps/shipping", icon: Truck },
-  { title: "Pagos", href: "/admin/apps/payments", icon: CreditCard },
-] as const;
+const mainNav = [
+  { title: "Executive Overview", href: "/admin", icon: LayoutDashboard },
+  { title: "Sales", href: "/admin/sales", icon: TrendingUp },
+  { title: "Finance", href: "/admin/finance", icon: Wallet },
+  { title: "Operations", href: "/admin/operations", icon: Truck },
+  { title: "Products", href: "/admin/products", icon: Package },
+  { title: "Sellers", href: "/admin/sellers", icon: Store },
+  { title: "Customers", href: "/admin/customers", icon: Users },
+  { title: "AI Copilot", href: "/admin/copilot", icon: Bot },
+] as const
 
 export function AppSidebar() {
-  const pathname = usePathname();
+  const pathname = usePathname()
 
   return (
     <Sidebar variant="inset" collapsible="icon">
-      <SidebarHeader>
+      <SidebarHeader className="group-data-[collapsible=icon]:hidden">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -48,7 +54,7 @@ export function AppSidebar() {
               </span>
               <span className="grid text-left leading-tight">
                 <span className="font-semibold">BiciMarket</span>
-                <span className="text-xs opacity-70">Administración</span>
+                <span className="text-xs opacity-70">Administration</span>
               </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -56,14 +62,18 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Marketplace</SidebarGroupLabel>
+          <SidebarGroupLabel>Analytics</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigation.map((item) => (
+              {mainNav.map((item) => (
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     render={<Link href={item.href} />}
-                    isActive={pathname === item.href}
+                    isActive={
+                      item.href === "/admin"
+                        ? pathname === "/admin"
+                        : pathname.startsWith(item.href)
+                    }
                     tooltip={item.title}
                   >
                     <item.icon />
@@ -76,5 +86,5 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
-  );
+  )
 }

@@ -44,9 +44,6 @@
 - **Único webhook externo**: `POST /webhooks/mercadopago`.
 - Server-to-server: `POST /api/v1/internal/shipment-delivered` (de Shipping).
 
-### 💬 Feedback App *(opcional)*
-- `POST|GET /api/v1/reviews`, `GET /api/v1/reviews/summary`.
-
 ## Patrón de implementación en este template
 
 - Endpoint público de negocio: `src/app/api/v1/<recurso>/route.ts`.
