@@ -41,20 +41,17 @@ src/app/api/internal/analytics/payments/[...slug]/route.ts
 The allowlist currently contains **13 paths**:
 
 | # | Slug | Actually Used? | Hook(s) |
-|---|---|---|---|
+|---|---|---|---|---|
 | 1 | `payments/metrics` | ✅ Yes | `usePaymentMetrics`, `usePrevPaymentMetrics` |
 | 2 | `payments/revenue/timeseries` | ✅ Yes | `useRevenueTimeSeries`, `usePrevRevenueTotal` |
 | 3 | `payments/revenue/by-method` | ✅ Yes | `useRevenueByMethod` |
 | 4 | `payments/revenue/by-seller` | ✅ Yes | `useRevenueBySeller`, `usePrevRevenueBySeller` |
 | 5 | `payments` | ✅ Yes | `useRecentPayments`, `useTopProductsByRevenue` (via `getPayments`) |
 | 6 | `settlements/metrics` | ✅ Yes | `useSettlementMetrics`, `usePrevSettlementMetrics` |
-| 7 | `settlements/commission/timeseries` | ❌ **Not used** | Returns empty in real API. Dashboard computes from `settlements` list instead. |
-| 8 | `settlements/status-breakdown` | ✅ Yes | `useSettlementStatusBreakdown` |
-| 9 | `settlements/pending-by-seller` | ✅ Yes | `usePendingSettlementsBySeller` (also called inside `getSettlementMetrics`) |
-| 10 | `settlements` | ✅ Yes | `useCommissionTimeSeries`, `usePayoutMetrics`, `usePayouts`, `useRecentSettlements` |
-| 11 | `refunds/metrics` | ✅ Yes | `useRefundMetrics` |
-| 12 | `payouts/metrics` | ❌ **Not used** | Returns empty in real API. Dashboard derives from `settlements` list. |
-| 13 | `payouts` | ❌ **Not used** | Returns empty in real API. Dashboard derives from `settlements` list. |
+| 7 | `settlements/status-breakdown` | ✅ Yes | `useSettlementStatusBreakdown` |
+| 8 | `settlements/pending-by-seller` | ✅ Yes | `usePendingSettlementsBySeller` (also called inside `getSettlementMetrics`) |
+| 9 | `settlements` | ✅ Yes | `useCommissionTimeSeries`, `usePayoutMetrics`, `usePayouts`, `useRecentSettlements` |
+| 10 | `refunds/metrics` | ✅ Yes | `useRefundMetrics` |
 
 **Proxy details:**
 - Send `X-Service-Token` + `X-Request-Id` upstream.
@@ -91,12 +88,6 @@ The allowlist currently contains **13 paths**:
 | S4 | `GET /api/v1/settlements/pending-by-seller?from=&to=` | `usePendingSettlementsBySeller` | Returns `[{ seller_profile_id, pending_count, total_cents }]`. Also called internally by `getSettlementMetrics`. |
 | S5 | `GET /api/v1/settlements?from=&to=&status=&page=&limit=` | `useRecentSettlements` (limit=5), `useCommissionTimeSeries`, `usePayoutMetrics`, `useRecentPayouts` | Primary list endpoint. **Derived uses**: `getCommissionTimeSeries` computes daily fee buckets from settlement `fee_amount_cents`; `getPayoutMetrics` derives payout aggregates from settlement list; `getPayouts` maps settlement records to `Payout` shape. |
 
-### Commission Timeseries
-
-| Endpoint | Hook | Status |
-|---|---|---|
-| `GET /api/v1/settlements/commission/timeseries?from=&to=` | — | ❌ **Not used** (returned empty in real API). Dashboard calls `GET /api/v1/settlements` and computes fee buckets client-side in `getCommissionTimeSeries()`. The endpoint is kept in `ALLOWED_PATHS` for fallback but never called. |
-
 ### Refunds
 
 | # | Endpoint | Hook(s) | Notes |
@@ -107,8 +98,7 @@ The allowlist currently contains **13 paths**:
 
 | # | Endpoint | Hook(s) | Status |
 |---|---|---|---|
-| X1 | `GET /api/v1/payouts/metrics?from=&to=` | — | ❌ **Not used** (returned empty). Dashboard derives from `GET /api/v1/settlements` list in `getPayoutMetrics()`. |
-| X2 | `GET /api/v1/payouts?from=&to=&page=&limit=` | — | ❌ **Not used** (returned empty). Dashboard derives from `GET /api/v1/settlements` list in `getPayouts()`. |
+| X1 | `GET /api/v1/payouts?from=&to=&page=&limit=` | — | ❌ **Not used by dashboard**. Dashboard derives from `GET /api/v1/settlements` list in `getPayouts()`. The endpoint is still served for the admin UI that manages payouts directly. |
 
 ---
 
@@ -211,12 +201,12 @@ The trend renders as:
 ## Endpoint Inventory Summary by App
 
 | App | Endpoints Needed | Status |
-|---|---|---|
-| **Payments** (real, via proxy) | 14 calls across 9 unique endpoints + 2 derived (commission, payouts) | ✅ Most implemented. `settlements/commission/timeseries`, `payouts/metrics`, `payouts` bypassed (return empty) — derived from `settlements` list. |
+|---|---|---|---|
+| **Payments** (real, via proxy) | 12 calls across 9 unique endpoints + 1 derived (payouts) | ✅ Most implemented. `payouts` list not called through proxy — dashboard derives from `settlements` list. |
 | **Seller** (mock) | 3 (`products/metrics`, `sales-orders/metrics`, `sellers/metrics`) | ⏳ Mocked. No admin endpoints exist yet. |
 | **Shipping** (mock) | 1 (`shipments/metrics`) | ⏳ Mocked. No admin endpoint exists yet. |
 | **Buyer** (future) | 2 (`admin/buyers`, `admin/buyers/metrics`) | ❌ Not implemented. Customer Analytics shows "requires Buyer App" banner. |
 
 **Total client-side API functions:** 14 `src/lib/api/payments.ts` + 4 mock modules (`shipments`, `sales-orders`, `products`, `sellers`).
-**Total proxy-allowed paths:** 13 (in `[...slug]/route.ts` ALLOWED_PATHS).
+**Total proxy-allowed paths:** 10 (in `[...slug]/route.ts` ALLOWED_PATHS).
 **Total prev-period hooks:** 10 for trend comparison.
