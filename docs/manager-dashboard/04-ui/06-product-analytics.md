@@ -1,102 +1,93 @@
-# 4.6 — Product Analytics
+# 4.6 — Analítica de Productos
 
 > **Manager Dashboard — UI Design**
 >
-> Product performance — top sellers, category trends, catalog composition.
+> Rendimiento de productos, categorías y salud del catálogo.
 
 ---
 
 ## Purpose
 
-Help marketing managers understand which products and categories drive revenue, track catalog health, and identify trends.
+Ayudar a los gerentes de marketing a entender qué productos y categorías generan ingresos, realizar seguimiento de la salud del catálogo e identificar tendencias.
 
 ## Layout
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│ Product Analytics                        [7d ▾] [30d ▾] [Cu▾] │
+│ Analítica de Productos                     [Filtro de fecha ▾]     │
 ├─────────────────────────────────────────────────────────────────────┤
 │ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐               │
-│ │ Active   │ │ Avg      │ │ Items/   │ │ Categories│               │
-│ │ Products │ │ Price    │ │ Order    │ │ 8        │               │
+│ │ Productos│ │ Precio   │ │ Items/   │ │ Categorías│               │
+│ │ Activos  │ │ Promedio │ │ Orden    │ │ 8        │               │
 │ │ 2,340    │ │ ARS 45K  │ │ 2.3      │ │          │               │
-│ │ ↑12% MoM │ │ ↓2% MoM  │ │ ↑5% MoM  │ │          │               │
+│ │ ↑12%     │ │ ↓2%      │ │ —        │ │          │               │
 │ └──────────┘ └──────────┘ └──────────┘ └──────────┘               │
 │                                                                     │
-│ Top 10 Products by Revenue                Top 10 Products by Volume│
-│ ┌────────────────────────────────────┐   ┌──────────────────────┐  │
-│ │ #  Product             Rev   Share │   │ #  Product     Units │  │
-│ │ ───────────────────────────────── │   │ ─────────────────── │  │
-│ │ 1  Trek Procaliber   ARS 3.1M 12%│   │ 1  Shimano Set   89  │  │
-│ │ 2  Specialized Rock  ARS 2.2M  8%│   │ 2  Trek Proc.    45  │  │
-│ │ 3  Shimano XT Set    ARS 1.8M  7%│   │ 3  Specialized   38  │  │
-│ │ 4  Canyon Spectral  ARS 1.5M  6%│   │ 4  Canyon Spec.  32  │  │
-│ │ 5  Giant Escape     ARS 1.2M  5%│   │ 5  Giant Escape   30  │  │
-│ │ 6  ...                          │   │ 6  ...                │  │
-│ └────────────────────────────────────┘   └──────────────────────┘  │
+│ Top 10 Productos por Ingresos          Top 10 Productos por Volumen│
+│ ┌────────────────────────────────────┐ ┌────────────────────────┐  │
+│ │ #  Producto        Ingresos   %    │ │ #  Producto    Unid.   │  │
+│ │ ─────────────────────────────────  │ │ ─────────────────────  │  │
+│ │ 1  Trek Procaliber ARS 3.1M  12%  │ │ 1  Shimano Set  89    │  │
+│ │ 2  Specialized Rock ARS 2.2M  8%  │ │ 2  Trek Proc.   45    │  │
+│ │ 3  Shimano XT Set  ARS 1.8M  7%   │ │ 3  Specialized 38    │  │
+│ │ 4  Canyon Spectral ARS 1.5M  6%   │ │ 4  Canyon Spec. 32   │  │
+│ │ 5  Giant Escape    ARS 1.2M  5%   │ │ 5  Giant Escape  30   │  │
+│ │ 6  ...                            │ │ 6  ...               │  │
+│ └────────────────────────────────────┘ └────────────────────────┘  │
 │                                                                     │
-│ Revenue by Category                        Catalog Composition     │
-│ ┌────────────────────────────┐           ┌──────────────────────┐  │
-│ │ MTB         45% █████████  │           │ Condition   Count    │  │
-│ │ Parts       20% █████      │           │ ─────────────────── │  │
-│ │ Urban       15% ████       │           │ New          1,200   │  │
-│ │ Road        12% ███        │           │ Used-Like New 450   │  │
-│ │ Accessories  5% █          │           │ Used-Good     380   │  │
-│ │ Kids         2%            │           │ Used-Fair     310   │  │
-│ │ BMX          1%            │           │                     │  │
-│ │ Indumentaria 0%            │           │ [Donut chart]       │  │
-│ └────────────────────────────┘           └──────────────────────┘  │
-│                                                                     │
-│ Category Revenue Trend (Last 12 Months)                             │
-│ ┌──────────────────────────────────────────────────────────────┐    │
-│ │ ▁▃▅▇▆▅▇███▇▆▅▆▇█▇▆▅▆▇███▇▆▅▆▇█                           │    │
-│ │ [Multi-line chart: one line per top 3 categories]            │    │
-│ └──────────────────────────────────────────────────────────────┘    │
+│ Productos por Categoría                Distribución de Ingresos    │
+│ ┌────────────────────────────┐         ┌────────────────────────┐  │
+│ │ MTB          █████████ 45  │         │ Trek Proc.      ██ 25%│  │
+│ │ Partes       █████     20  │         │ Specialized     █ 18% │  │
+│ │ Urbana       ████      15  │         │ Shimano Set     █ 15% │  │
+│ │ Ruta         ███       12  │         │ Canyon          █ 12% │  │
+│ │ Accesorios    █         5  │         │ Giant           █ 10% │  │
+│ │ Infanti        ▏        2  │         │ Otros             20% │  │
+│ │ BMX            ▏        1  │         └────────────────────────┘  │
+│ └────────────────────────────┘                                     │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Widgets
 
 ### 1. KPI Cards
-- Active products, average price, items per order, categories count
-- **Data Source**: `GET /api/v1/products`
+- **Component**: `KpiCard` con `trend` (Items/Orden sin trend — hardcoded "2.3")
+- **Métricas**: Productos Activos, Precio Promedio, Items/Orden, Categorías
+- **Data Source**: Mock (`useProductMetrics`)
 
-### 2. Top Products by Revenue
-- **Component**: `Table` with ranked rows
-- **Columns**: Rank, Product name, Revenue, Market share bar
-- **Data Source**: Payments items_summary cross-referenced with Seller products
-- **Interaction**: Click product → show trend chart for that product
+### 2. Top 10 Productos por Ingresos
+- **Component**: `Table`
+- **Columns**: #, Producto (`formatARS()`), Ingresos, Participación %
+- **Data Source**: Mock (`useTopProductsByRevenue`)
 
-### 3. Top Products by Volume
-- **Component**: `Table` (same format, sorted by units sold)
-- **Data Source**: Same as above, sorted by quantity
+### 3. Top 10 Productos por Volumen
+- **Component**: `Table`
+- **Columns**: #, Producto, Unidades Vendidas
+- **Data Source**: Mock (`useTopProductsByVolume`)
 
-### 4. Revenue by Category
-- **Component**: Horizontal `BarChart`
-- **Data Source**: Cross-reference products by category from payments
+### 4. Productos por Categoría
+- **Component**: Barra horizontal (`BarChart`)
+- **Data Source**: Mock (`useProductsByCategory`)
 
-### 5. Catalog Composition
-- **Component**: `DonutChart` (condition) + `BarChart` (category count)
-- **Data Source**: `GET /api/v1/products`
+### 5. Distribución de Ingresos por Producto
+- **Component**: `DonutChart` (Top 5 + "Otros")
+- **Data Source**: Mock (`useTopProductsByRevenue`)
 
-### 6. Category Revenue Trend
-- **Component**: Multi-line `LineChart`
-- **Data Source**: Time-series revenue by top 3-5 categories
-
-## States
+## Estados
 
 ### Loading
-- Skeleton tables for top products
-- Chart placeholders
+- Skeleton para tablas de top productos
+- Placeholder para gráficos
 
 ### Error
-- "Product data unavailable. Seller App may be down."
-- Show payment-derived data only (without product names/categories)
+- "Datos de productos no disponibles — la app de Seller puede estar caída."
+- Mostrar datos derivados de Payments como fallback
 
 ### Empty
-- "No products sold in this period."
-- "Catalog is empty. No active products found."
-
-## Data Source Note
-
-Product revenue data requires parsing `items_summary` from payments and cross-referencing with Seller App product names/categories. If Seller App is unavailable, product IDs from payments can be shown without names.
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  No se vendieron productos en este período.                     │
+│                                                                  │
+│  El catálogo está vacío. No se encontraron productos activos.   │
+└─────────────────────────────────────────────────────────────────┘
+```

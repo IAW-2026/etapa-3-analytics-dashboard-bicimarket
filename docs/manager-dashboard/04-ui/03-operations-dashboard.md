@@ -1,100 +1,103 @@
-# 4.3 — Operations Dashboard
+# 4.3 — Panel de Operaciones
 
 > **Manager Dashboard — UI Design**
 >
-> Operational monitoring — fulfillment pipeline, seller acceptance, delivery performance, and bottlenecks.
+> Pipeline de cumplimiento, cuellos de botella y rendimiento de entregas.
 
 ---
 
 ## Purpose
 
-Give operations managers real-time visibility into the order fulfillment pipeline, from payment to delivery, with bottleneck identification.
+Dar a los gerentes de operaciones visibilidad en tiempo real del pipeline de cumplimiento de órdenes, desde el pago hasta la entrega, con identificación de cuellos de botella.
 
 ## Layout
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│ Operations Dashboard                       [7d ▾] [30d ▾] [Cu▾] │
+│ Panel de Operaciones                       [Filtro de fecha ▾]     │
 ├─────────────────────────────────────────────────────────────────────┤
 │ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐               │
-│ │ Fulfill- │ │ Avg Del  │ │ Pending  │ │ Seller   │               │
-│ │ ment Rate│ │ Time     │ │ Shipments│ │ Accept.  │               │
-│ │ 87%      │ │ 3.2 days │ │ 25       │ │ 92%      │               │
-│ │ ↑2% vs7d │ │ ↓0.3 vs7d│ │ ↑5 vs7d │ │ ↓3% vs7d │               │
+│ │ Tasa de  │ │ Tiempo   │ │ Envíos   │ │ Tasa de  │               │
+│ │ Cumplim. │ │ Prom.    │ │ Pend.    │ │ Aceptac. │               │
+│ │ 87%      │ │ Entrega  │ │ 25       │ │ 92%      │               │
+│ │ ↑2%      │ │ 3.2 días │ │ ↑5%      │ │ ↓3%      │               │
+│ │          │ │ ↓0.3     │ │          │ │          │               │
 │ └──────────┘ └──────────┘ └──────────┘ └──────────┘               │
 │                                                                     │
-│ Fulfillment Funnel (All Time)              Backlog by Status        │
-│ ┌────────────────────────────────────┐    ┌──────────────────────┐ │
-│ │ Paid                               │    │ Status         Count │ │
-│ │ ██████████████████████████████ 1245│    │ ─────────────────── │ │
-│ │ ↓                                   │    │ Ready for Pickup 12│ │
-│ │ Accepted                            │    │ Picked Up         8│ │
-│ │ ████████████████████████████   1145│    │ In Transit       25│ │
-│ │ ↓                                   │    │ Total Backlog    45│ │
-│ │ Shipped                             │    └──────────────────────┘ │
+│ Embudo de Cumplimiento                    Pendientes por Estado     │
+│ ┌────────────────────────────────────┐   ┌──────────────────────┐  │
+│ │ Pagado                             │   │ Listo para Recoger 12│  │
+│ │ ██████████████████████████████ 1245│   │ Recogido            8│  │
+│ │ ↓                                   │   │ En Tránsito        25│  │
+│ │ Aceptado                            │   └──────────────────────┘  │
+│ │ ████████████████████████████   1145│                             │
+│ │ ↓                                   │                             │
+│ │ Enviado                             │                             │
 │ │ ███████████████████████████    1090│                             │
-│ │ ↓                                   │    Delivery Time Distribution│
-│ │ Delivered                           │    ┌──────────────────────┐ │
-│ │ ██████████████████████████    1080│    │                      │ │
-│ │                                     │    │ [Histogram chart]    │ │
-│ │ Drop-off: Paid→Accepted: -8%       │    │                      │ │
-│ │           Accepted→Shipped: -5%    │    └──────────────────────┘ │
+│ │ ↓                                   │                             │
+│ │ Entregado                           │                             │
+│ │ ██████████████████████████    1080│                             │
+│ │                                     │                             │
+│ │ Pérdida: Pagado→Aceptado: -8%      │                             │
+│ │          Aceptado→Enviado: -5%     │                             │
 │ └────────────────────────────────────┘                             │
 │                                                                     │
-│ Pending Seller Acceptance                   Recent Deliveries      │
-│ ┌────────────────────────────────────┐    ┌──────────────────────┐ │
-│ │ Seller     Orders  Waiting Since  │    │ Order  Status  Date  │ │
-│ │ ───────────────────────────────── │    │ ─────────────────── │ │
-│ │ BikeAR     5      Jun 09          │    │ ORD-001 Delivered  ✓│ │
-│ │ RodadosXX  4      Jun 08          │    │ ORD-002 In Transit  │ │
-│ │ MTB House  3      Jun 10          │    │ ORD-003 Delivered  ✓│ │
-│ │ Ciclos OK  2      Jun 10          │    │ ORD-004 Pending     │ │
-│ │ BiciSur    1      Jun 09          │    │ ORD-005 Delivered  ✓│ │
-│ └────────────────────────────────────┘    └──────────────────────┘ │
+│ Aceptación Pendiente de Vendedores      Entregas Recientes         │
+│ ┌────────────────────────────────────┐  ┌────────────────────────┐ │
+│ │ Vendedor   Pend.  Espera          │  │ Entregados        ██   │ │
+│ │ ───────────────────────────────── │  │ En Tránsito        ░░  │ │
+│ │ BikeAR     5     9 días  🔴      │  │ Fallidos           ░░  │ │
+│ │ RodadosXX  4     4 días  🟡      │  │                        │ │
+│ │ MTB House  3     1 día   🟢      │  │ Tasa de Cumplimiento   │ │
+│ │ Ciclos OK  2     1 día   🟢      │  │ 94.2%                  │ │
+│ │ BiciSur    1     0 días  🟢      │  └────────────────────────┘ │
+│ └────────────────────────────────────┘                           │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Widgets
 
 ### 1. KPI Cards
-- Fulfillment rate, average delivery time, pending shipments, seller acceptance rate
-- **Data Source**: Shipping + Seller apps
+- **Component**: `KpiCard` con `trend`
+- **Métricas**: Tasa de Cumplimiento, Tiempo Prom. de Entrega, Envíos Pendientes, Tasa de Aceptación
+- **Data Source**: `useShipmentMetrics`, `useSalesOrderMetrics` (mock)
 
-### 2. Fulfillment Funnel
-- **Component**: Custom funnel visualization (horizontal bars with connectors)
-- **Stages**: Paid → Accepted → Shipped → Delivered
-- **Data Source**: Cross-reference payments, sales_orders, shipments
-- **Features**: Drop-off percentage at each stage
+### 2. Embudo de Cumplimiento
+- **Component**: Barras horizontales personalizadas con conectores
+- **Etapas**: Pagado → Aceptado → Enviado → Entregado
+- **Data Source**: `useOrderFulfillmentFunnel` (mock)
+- **Features**: Porcentaje de pérdida en cada etapa
 
-### 3. Backlog by Status
-- **Component**: `Table` or stacked bar
-- **Data Source**: Shipments grouped by status (ready_for_pickup, picked_up, in_transit)
+### 3. Pendientes por Estado
+- **Component**: `BarChart` horizontal
+- **Data Source**: `usePendingShipmentsByStatus` (mock)
+- **Estados**: Listo para Recoger, Recogido, En Tránsito
 
-### 4. Delivery Time Distribution
-- **Component**: `Histogram` chart
-- **Data Source**: Shipment delivery times
-- **Features**: Show median, p80, p95 lines
+### 4. Aceptación Pendiente de Vendedores
+- **Component**: `Table` con `Badge` de color según tiempo de espera
+- **Data Source**: Mock (`useSalesOrderMetrics`)
+- **Colores**: 🟢 < 2 días, 🟡 2-7 días, 🔴 > 7 días
+- **Interaction**: Ninguna (tabla estática)
 
-### 5. Pending Seller Acceptance
-- **Component**: `Table` with alert badges
-- **Data Source**: Sales orders where `fulfillment_status = pending`
-- **Features**: Time-since-creation column to highlight stale orders
-- **Alert**: Orange background if waiting > 24h, red if > 48h
+### 5. Entregas Recientes
+- **Component**: Resumen de badges (Entregados, En Tránsito, Fallidos) + tasa de cumplimiento
+- **Data Source**: Mock (`useShipmentMetrics`)
 
-### 6. Recent Deliveries
-- **Component**: Condensed `Table` (last 5)
-- **Data Source**: `GET /api/v1/shipments` (most recent)
-
-## States
+## Estados
 
 ### Loading
-- Skeleton for funnel visualization
-- Spinner for tables
+- Skeleton para el embudo de cumplimiento
+- Spinner para tablas
 
 ### Error
-- "Operations data unavailable. The Shipping App may be down."
-- Show cached data with timestamp warning
+- "Datos de operaciones no disponibles — las apps de Shipping o Seller pueden estar caídas."
 
 ### Empty
-- "No active shipments. All orders fulfilled!" (rare state)
-- "No pending seller orders. All sellers are up to date."
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  No hay envíos activos. Todas las órdenes están cumplidas.      │
+│                                                                  │
+│  No hay órdenes pendientes de aceptación por parte de           │
+│  vendedores. Todo está al día.                                  │
+└─────────────────────────────────────────────────────────────────┘
+```

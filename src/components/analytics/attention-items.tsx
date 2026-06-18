@@ -17,15 +17,15 @@ export function AttentionItems({ items }: AttentionItemsProps) {
   if (items.length === 0) {
     return (
       <div className="rounded-lg border p-4">
-        <h3 className="mb-2 text-sm font-medium">Attention Items</h3>
-        <p className="text-sm text-muted-foreground">No items require attention.</p>
+        <h3 className="mb-2 text-sm font-medium">Atención Requerida</h3>
+        <p className="text-sm text-muted-foreground">No hay elementos que requieran atención.</p>
       </div>
     )
   }
 
   return (
     <div className="rounded-lg border p-4">
-      <h3 className="mb-3 text-sm font-medium">Attention Items</h3>
+      <h3 className="mb-3 text-sm font-medium">Atención Requerida</h3>
       <div className="space-y-2">
         {items.map((item) => {
           const config = severityConfig[item.severity]

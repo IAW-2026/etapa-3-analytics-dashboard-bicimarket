@@ -49,8 +49,8 @@ export async function getCommissionTimeSeries(filters?: Partial<FilterState>): P
   const buckets = new Map<string, number>()
 
   for (const s of paid) {
-    const month = s.created_at.slice(0, 7)
-    buckets.set(month, (buckets.get(month) ?? 0) + s.fee_amount_cents)
+    const day = s.created_at.slice(0, 10)
+    buckets.set(day, (buckets.get(day) ?? 0) + s.fee_amount_cents)
   }
 
   return Array.from(buckets.entries())

@@ -7,11 +7,11 @@ import { Input } from "@/components/ui/input"
 import { SectionHeader } from "@/components/analytics/section-header"
 
 const suggestions = [
-  "How was revenue this week?",
-  "Which seller performed best?",
-  "Show me pending settlements",
-  "Why did sales drop yesterday?",
-  "Forecast next month's revenue",
+  "¿Cómo fueron los ingresos esta semana?",
+  "¿Qué vendedor rindió mejor?",
+  "Mostrame las liquidaciones pendientes",
+  "¿Por qué bajaron las ventas ayer?",
+  "Pronosticá los ingresos del próximo mes",
 ]
 
 export default function AICopilotPage() {
@@ -19,19 +19,19 @@ export default function AICopilotPage() {
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col space-y-6">
-      <SectionHeader title="AI Copilot" description="Ask questions about your marketplace in natural language" />
+      <SectionHeader title="Copilot IA" description="Hacé preguntas sobre tu marketplace en lenguaje natural" />
 
       <div className="flex flex-1 flex-col items-center justify-center rounded-lg border bg-card p-8 text-center">
         <div className="mb-4 flex size-16 items-center justify-center rounded-2xl bg-primary/10">
           <Bot className="size-8 text-primary" />
         </div>
-        <h2 className="mb-2 text-xl font-semibold">Hi! I&apos;m your marketplace AI assistant.</h2>
+        <h2 className="mb-2 text-xl font-semibold">¡Hola! Soy tu asistente IA del marketplace.</h2>
         <p className="mb-6 max-w-md text-sm text-muted-foreground">
-          I can help you analyze revenue, orders, settlements, and more.
-          Ask me anything about your marketplace data.
+          Puedo ayudarte a analizar ingresos, órdenes, liquidaciones y más.
+          Preguntame cualquier cosa sobre los datos de tu marketplace.
         </p>
 
-        <div className="mb-1 text-sm font-medium text-muted-foreground">Try asking:</div>
+        <div className="mb-1 text-sm font-medium text-muted-foreground">Probá preguntar:</div>
         <div className="flex flex-wrap justify-center gap-2">
           {suggestions.map((q) => (
             <Button
@@ -50,7 +50,7 @@ export default function AICopilotPage() {
 
       <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
         <Input
-          placeholder="Ask a question about your marketplace..."
+          placeholder="Hacé una pregunta sobre tu marketplace..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           className="border-0 bg-transparent px-0 shadow-none focus-visible:ring-0"
@@ -65,15 +65,15 @@ export default function AICopilotPage() {
           disabled={!input.trim()}
           variant="default"
           className="shrink-0"
-          title="Coming soon — AI integration"
+          title="Pronto — integración con IA"
         >
           <Send className="size-4" />
         </Button>
       </div>
 
       <p className="text-center text-xs text-muted-foreground">
-        AI Copilot is ready for integration with an LLM provider (OpenAI, Anthropic, Gemini, etc.).
-        Connect using the <code className="rounded bg-muted px-1">useChat</code> hook from Vercel AI SDK.
+        Copilot IA está listo para integrarse con un proveedor LLM (OpenAI, Anthropic, Gemini, etc.).
+        Conectalo usando el hook <code className="rounded bg-muted px-1">useChat</code> de Vercel AI SDK.
       </p>
     </div>
   )

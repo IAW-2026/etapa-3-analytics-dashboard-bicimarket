@@ -8,12 +8,15 @@ import { SectionHeader } from "@/components/analytics/section-header"
 import { StatusBadge } from "@/components/analytics/status-badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { useRevenueBySeller, useSettlementMetrics, useSellerMetrics } from "@/hooks/use-dashboard-data"
+import { useRevenueBySeller, useSettlementMetrics, useSellerMetrics, usePrevSettlementMetrics, usePrevSellerMetrics, usePrevRevenueBySeller } from "@/hooks/use-dashboard-data"
+import { computeTrend } from "@/lib/trends"
 import { mockData } from "@/lib/mock/mock-data"
+import { translateStatus } from "@/lib/labels"
 
 const COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "var(--color-chart-5)"]
 
-function formatARS(cents: number) {
+function formatARS(cents: number | undefined | null) {
+  if (cents == null || Number.isNaN(cents)) return "—"
   return `ARS ${(cents / 100).toLocaleString("es-AR", { minimumFractionDigits: 0 })}`
 }
 
@@ -21,11 +24,23 @@ export default function SellerAnalyticsPage() {
   const topSellers = useRevenueBySeller()
   const settlementMetrics = useSettlementMetrics()
   const sellerMetrics = useSellerMetrics()
+  const prevSettlementMetrics = usePrevSettlementMetrics()
+  const prevSellerMetrics = usePrevSellerMetrics()
+  const prevTopSellers = usePrevRevenueBySeller()
   const [selectedSeller, setSelectedSeller] = useState<string | null>(null)
 
   const sellerData = topSellers.data ?? []
+  const prevSellerData = prevTopSellers.data ?? []
   const sm = settlementMetrics.data
+  const psm = prevSettlementMetrics.data
   const selm = sellerMetrics.data
+  const pselm = prevSellerMetrics.data
+
+  const avgRevenue = sellerData.length > 0 ? sellerData.reduce((s, r) => s + r.revenue_cents, 0) / sellerData.length : 0
+  const prevAvgRevenue = prevSellerData.length > 0 ? prevSellerData.reduce((s, r) => s + r.revenue_cents, 0) / prevSellerData.length : 0
+  const activeSellersTrend = computeTrend(pselm?.verified_count, selm?.verified_count)
+  const pendingLiqTrend = computeTrend(psm?.pending_cents, sm?.pending_cents)
+  const avgRevenueTrend = computeTrend(prevAvgRevenue, avgRevenue)
 
   const selectedProfile = selectedSeller ? mockData.sellers.find((s) => s.id === selectedSeller) : null
   const selectedSettlements = selectedSeller
@@ -34,32 +49,32 @@ export default function SellerAnalyticsPage() {
 
   const verificationData = selm
     ? [
-        { status: "Verified", count: selm.verified_count },
-        { status: "Pending", count: selm.pending_count },
-        { status: "Suspended", count: selm.suspended_count },
+        { status: "verified", count: selm.verified_count },
+        { status: "pending", count: selm.pending_count },
+        { status: "suspended", count: selm.suspended_count },
       ]
     : []
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <SectionHeader title="Seller Analytics" description="Seller performance, rankings, and verification status" />
+      <SectionHeader title="Analítica de Vendedores" description="Rendimiento, ranking y estado de verificación de vendedores" />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Active Sellers" value={selm ? String(selm.verified_count) : "—"} isLoading={sellerMetrics.isLoading} />
-        <KpiCard label="Pending Settlements" value={sm ? formatARS(sm.pending_cents) : "—"} trend={{ value: `${sm?.pending_count ?? 0} sellers`, direction: "up", positive: false }} isLoading={settlementMetrics.isLoading} />
-        <KpiCard label="Avg Revenue" value={sellerData.length > 0 ? formatARS(sellerData.reduce((s, r) => s + r.revenue_cents, 0) / sellerData.length) : "—"} trend={{ value: "+5% MoM", direction: "up" }} isLoading={topSellers.isLoading} />
-        <KpiCard label="Top Seller" value={sellerData[0]?.seller_name ?? "—"} isLoading={topSellers.isLoading} />
+        <KpiCard label="Vendedores Activos" value={selm ? String(selm.verified_count) : "—"} trend={activeSellersTrend ? { value: activeSellersTrend.label, direction: activeSellersTrend.direction } : undefined} isLoading={sellerMetrics.isLoading} />
+        <KpiCard label="Liquidaciones Pendientes" value={sm ? formatARS(sm.pending_cents) : "—"} trend={pendingLiqTrend ? { value: pendingLiqTrend.label, direction: pendingLiqTrend.direction, positive: false } : undefined} isLoading={settlementMetrics.isLoading} />
+        <KpiCard label="Ingreso Promedio" value={formatARS(avgRevenue)} trend={avgRevenueTrend ? { value: avgRevenueTrend.label, direction: avgRevenueTrend.direction } : undefined} isLoading={topSellers.isLoading} />
+        <KpiCard label="Mejor Vendedor" value={sellerData[0]?.seller_name ?? "—"} isLoading={topSellers.isLoading} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <ChartContainer title="Seller Ranking (by Revenue)" isLoading={topSellers.isLoading} error={topSellers.error?.message} isEmpty={sellerData.length === 0}>
+        <ChartContainer title="Ranking de Vendedores (por Ingresos)" isLoading={topSellers.isLoading} error={topSellers.error?.message} isEmpty={sellerData.length === 0}>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-8">#</TableHead>
-                <TableHead>Seller</TableHead>
-                <TableHead>Revenue</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Vendedor</TableHead>
+                <TableHead>Ingresos</TableHead>
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -68,7 +83,7 @@ export default function SellerAnalyticsPage() {
                   <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
                   <TableCell className="text-sm font-medium">{seller.seller_name}</TableCell>
                   <TableCell className="text-sm">{formatARS(seller.revenue_cents)}</TableCell>
-                  <TableCell className="text-right text-xs text-primary">View</TableCell>
+                  <TableCell className="text-right text-xs text-primary">Ver</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -76,10 +91,10 @@ export default function SellerAnalyticsPage() {
         </ChartContainer>
 
         <div className="grid gap-6">
-          <ChartContainer title="Verification Status" isLoading={sellerMetrics.isLoading} error={sellerMetrics.error?.message} isEmpty={verificationData.length === 0}>
+          <ChartContainer title="Estado de Verificación" isLoading={sellerMetrics.isLoading} error={sellerMetrics.error?.message} isEmpty={verificationData.length === 0}>
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
-                <Pie data={verificationData} cx="50%" cy="50%" innerRadius={45} outerRadius={80} dataKey="count" nameKey="status" label={({ name, value }) => `${name}: ${value}`}>
+                <Pie data={verificationData} cx="50%" cy="50%" innerRadius={45} outerRadius={80} dataKey="count" nameKey="status" label={({ name, value }) => `${translateStatus(name)}: ${value}`}>
                   {verificationData.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
                 </Pie>
                 <Tooltip />
@@ -87,7 +102,7 @@ export default function SellerAnalyticsPage() {
             </ResponsiveContainer>
           </ChartContainer>
 
-          <ChartContainer title="Seller Product Count" isLoading={sellerMetrics.isLoading} isEmpty={mockData.sellers.length === 0}>
+          <ChartContainer title="Productos por Vendedor" isLoading={sellerMetrics.isLoading} isEmpty={mockData.sellers.length === 0}>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={mockData.sellers.map((s) => ({ name: s.display_name, count: s.product_count }))} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -101,13 +116,13 @@ export default function SellerAnalyticsPage() {
         </div>
       </div>
 
-      <ChartContainer title="Seller Settlements" isLoading={false} isEmpty={mockData.settlements.length === 0}>
+      <ChartContainer title="Liquidaciones por Vendedor" isLoading={false} isEmpty={mockData.settlements.length === 0}>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Seller</TableHead>
-              <TableHead>Pending</TableHead>
-              <TableHead>Paid</TableHead>
+                <TableHead>Pendiente</TableHead>
+                <TableHead>Pagado</TableHead>
               <TableHead>Total</TableHead>
             </TableRow>
           </TableHeader>
@@ -134,30 +149,30 @@ export default function SellerAnalyticsPage() {
       <Sheet open={!!selectedSeller} onOpenChange={(open) => { if (!open) setSelectedSeller(null) }}>
         <SheetContent>
           <SheetHeader>
-            <SheetTitle>{selectedProfile?.display_name ?? "Seller Detail"}</SheetTitle>
+            <SheetTitle>{selectedProfile?.display_name ?? "Detalle del Vendedor"}</SheetTitle>
           </SheetHeader>
           {selectedProfile && (
             <div className="mt-6 space-y-4">
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Status</span>
+                  <span className="text-muted-foreground">Estado</span>
                   <StatusBadge status={selectedProfile.verification_status} />
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Products</span>
-                  <span>{selectedProfile.product_count} active</span>
+                  <span className="text-muted-foreground">Productos</span>
+                  <span>{selectedProfile.product_count} activos</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Since</span>
+                  <span className="text-muted-foreground">Desde</span>
                   <span>{new Date(selectedProfile.created_at).toLocaleDateString("es-AR")}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Avg Response</span>
+                  <span className="text-muted-foreground">Respuesta Promedio</span>
                   <span>{selectedProfile.avg_response_time_hours}h</span>
                 </div>
               </div>
               <div>
-                <h4 className="mb-2 text-sm font-medium">Recent Settlements</h4>
+                <h4 className="mb-2 text-sm font-medium">Liquidaciones Recientes</h4>
                 <div className="space-y-2">
                   {selectedSettlements.slice(0, 5).map((s) => (
                     <div key={s.id} className="flex items-center justify-between rounded-md border p-2 text-sm">

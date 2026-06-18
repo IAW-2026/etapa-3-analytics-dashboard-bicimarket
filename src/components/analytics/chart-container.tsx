@@ -20,7 +20,7 @@ export function ChartContainer({
   isLoading,
   error,
   isEmpty,
-  emptyMessage = "No data available for this period.",
+  emptyMessage = "No hay datos disponibles para este período.",
   onRetry,
   children,
   action,
@@ -42,7 +42,7 @@ export function ChartContainer({
           <p>{error}</p>
           {onRetry && (
             <Button variant="outline" size="sm" onClick={onRetry}>
-              Retry
+              Reintentar
             </Button>
           )}
         </div>

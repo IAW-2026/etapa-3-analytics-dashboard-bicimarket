@@ -3,196 +3,186 @@
 import { useQuery } from "@tanstack/react-query"
 import { useDashboardStore } from "@/lib/dashboard-store"
 import type { FilterState } from "@/lib/mock/types"
+import { getPrevFilters } from "@/lib/trends"
+import * as paymentsApi from "@/lib/api/payments"
 
 function getFilters() {
-  const { from, to } = useDashboardStore.getState()
-  return { from, to } as FilterState
+  const s = useDashboardStore.getState()
+  return { from: s.from, to: s.to } as FilterState
 }
 
+/** Subscribes to date range changes and returns a stable key that changes when the range changes. */
+function useDateFilterKey() {
+  const from = useDashboardStore((s) => s.from.getTime())
+  const to = useDashboardStore((s) => s.to.getTime())
+  return [from, to] as const
+}
+
+// Temporary local map until Seller App endpoints exist
+const SELLER_NAMES = new Map<string, string>([
+  ["slp_bicisur", "BiciSur"],
+  ["slp_bikear", "BikeAR"],
+  ["slp_rodadosxx", "RodadosXX"],
+  ["slp_ciclosok", "Ciclos OK"],
+  ["slp_mtbhouse", "MTB House"],
+  ["slp_urbanride", "Urban Ride"],
+  ["slp_bicishop", "BiciShop"],
+  ["slp_labici", "La Bici"],
+])
+
+function resolveSellerNames<T extends { seller_profile_id: string }>(items: T[]): (T & { seller_name: string })[] {
+  return items.map((item) => ({
+    ...item,
+    seller_name: SELLER_NAMES.get(item.seller_profile_id) ?? item.seller_profile_id,
+  }))
+}
+
+// ── Payments ────────────────────────────────────────────────
+
 export function useRevenueTimeSeries() {
+  const dateKey = useDateFilterKey()
   return useQuery({
-    queryKey: ["revenueTimeSeries", useDashboardStore.getState().preset],
-    queryFn: async () => {
-      const { getRevenueTimeSeries } = await import("@/lib/mock/payments")
-      return getRevenueTimeSeries(getFilters())
-    },
+    queryKey: ["revenueTimeSeries", ...dateKey],
+    queryFn: () => paymentsApi.getRevenueTimeSeries(getFilters()),
     refetchInterval: 60_000,
+    select: (data) => (Array.isArray(data) ? data : []) as typeof data,
   })
 }
 
 export function usePaymentMetrics() {
+  const dateKey = useDateFilterKey()
   return useQuery({
-    queryKey: ["paymentMetrics", useDashboardStore.getState().preset],
-    queryFn: async () => {
-      const { getPaymentMetrics } = await import("@/lib/mock/payments")
-      return getPaymentMetrics(getFilters())
-    },
+    queryKey: ["paymentMetrics", ...dateKey],
+    queryFn: () => paymentsApi.getPaymentMetrics(getFilters()),
     refetchInterval: 60_000,
   })
 }
 
 export function useRevenueByDayOfWeek() {
+  const dateKey = useDateFilterKey()
   return useQuery({
-    queryKey: ["revenueByDayOfWeek", useDashboardStore.getState().preset],
-    queryFn: async () => {
-      const { getRevenueByDayOfWeek } = await import("@/lib/mock/payments")
-      return getRevenueByDayOfWeek(getFilters())
-    },
+    queryKey: ["revenueByDayOfWeek", ...dateKey],
+    queryFn: () => paymentsApi.getRevenueByDayOfWeek(getFilters()),
+    select: (data) => (Array.isArray(data) ? data : []) as typeof data,
   })
 }
 
 export function useRevenueByMethod() {
+  const dateKey = useDateFilterKey()
   return useQuery({
-    queryKey: ["revenueByMethod", useDashboardStore.getState().preset],
-    queryFn: async () => {
-      const { getRevenueByMethod } = await import("@/lib/mock/payments")
-      return getRevenueByMethod(getFilters())
-    },
+    queryKey: ["revenueByMethod", ...dateKey],
+    queryFn: () => paymentsApi.getRevenueByMethod(getFilters()),
+    select: (data) => (Array.isArray(data) ? data : []) as typeof data,
   })
 }
 
 export function useRevenueBySeller() {
+  const dateKey = useDateFilterKey()
   return useQuery({
-    queryKey: ["revenueBySeller", useDashboardStore.getState().preset],
+    queryKey: ["revenueBySeller", ...dateKey],
     queryFn: async () => {
-      const { getRevenueBySeller } = await import("@/lib/mock/payments")
-      return getRevenueBySeller(getFilters())
+      const data = await paymentsApi.getRevenueBySeller(getFilters())
+      return resolveSellerNames(data).sort((a, b) => b.revenue_cents - a.revenue_cents)
     },
+    select: (data) => (Array.isArray(data) ? data : []) as typeof data,
   })
 }
 
-export function useSettlementMetrics() {
+export function useRecentPayments() {
+  const dateKey = useDateFilterKey()
   return useQuery({
-    queryKey: ["settlementMetrics", useDashboardStore.getState().preset],
-    queryFn: async () => {
-      const { getSettlementMetrics } = await import("@/lib/mock/settlements")
-      return getSettlementMetrics(getFilters())
-    },
+    queryKey: ["recentPayments", ...dateKey],
+    queryFn: () => paymentsApi.getPayments({ ...getFilters(), limit: 5 }),
+  })
+}
+
+// ── Settlements ─────────────────────────────────────────────
+
+export function useSettlementMetrics() {
+  const dateKey = useDateFilterKey()
+  return useQuery({
+    queryKey: ["settlementMetrics", ...dateKey],
+    queryFn: () => paymentsApi.getSettlementMetrics(getFilters()),
     refetchInterval: 60_000,
   })
 }
 
 export function useCommissionTimeSeries() {
+  const dateKey = useDateFilterKey()
   return useQuery({
-    queryKey: ["commissionTimeSeries", useDashboardStore.getState().preset],
-    queryFn: async () => {
-      const { getCommissionTimeSeries } = await import("@/lib/mock/settlements")
-      return getCommissionTimeSeries(getFilters())
-    },
+    queryKey: ["commissionTimeSeries", ...dateKey],
+    queryFn: () => paymentsApi.getCommissionTimeSeries(getFilters()),
+    select: (data) => (Array.isArray(data) ? data : []) as typeof data,
   })
 }
 
 export function useSettlementStatusBreakdown() {
+  const dateKey = useDateFilterKey()
   return useQuery({
-    queryKey: ["settlementStatusBreakdown", useDashboardStore.getState().preset],
-    queryFn: async () => {
-      const { getSettlementStatusBreakdown } = await import("@/lib/mock/settlements")
-      return getSettlementStatusBreakdown(getFilters())
-    },
+    queryKey: ["settlementStatusBreakdown", ...dateKey],
+    queryFn: () => paymentsApi.getSettlementStatusBreakdown(getFilters()),
+    select: (data) => (Array.isArray(data) ? data : []) as typeof data,
   })
 }
 
 export function usePendingSettlementsBySeller() {
+  const dateKey = useDateFilterKey()
   return useQuery({
-    queryKey: ["pendingSettlementsBySeller", useDashboardStore.getState().preset],
+    queryKey: ["pendingSettlementsBySeller", ...dateKey],
     queryFn: async () => {
-      const { getPendingSettlementsBySeller } = await import("@/lib/mock/settlements")
-      return getPendingSettlementsBySeller(getFilters())
+      const data = await paymentsApi.getPendingSettlementsBySeller(getFilters())
+      return resolveSellerNames(data).sort((a, b) => b.total_cents - a.total_cents)
     },
+    select: (data) => (Array.isArray(data) ? data : []) as typeof data,
   })
 }
 
 export function useRecentSettlements() {
+  const dateKey = useDateFilterKey()
   return useQuery({
-    queryKey: ["recentSettlements", useDashboardStore.getState().preset],
-    queryFn: async () => {
-      const { getSettlements } = await import("@/lib/mock/settlements")
-      return getSettlements({ ...getFilters(), limit: 5 })
-    },
+    queryKey: ["recentSettlements", ...dateKey],
+    queryFn: () =>
+      paymentsApi.getSettlements({ ...getFilters(), limit: 5 }),
   })
 }
+
+// ── Refunds ─────────────────────────────────────────────────
 
 export function useRefundMetrics() {
+  const dateKey = useDateFilterKey()
   return useQuery({
-    queryKey: ["refundMetrics", useDashboardStore.getState().preset],
-    queryFn: async () => {
-      const { getRefundMetrics } = await import("@/lib/mock/refunds")
-      return getRefundMetrics(getFilters())
-    },
+    queryKey: ["refundMetrics", ...dateKey],
+    queryFn: () => paymentsApi.getRefundMetrics(getFilters()),
   })
 }
 
+// ── Payouts ─────────────────────────────────────────────────
+
 export function usePayoutMetrics() {
+  const dateKey = useDateFilterKey()
   return useQuery({
-    queryKey: ["payoutMetrics", useDashboardStore.getState().preset],
-    queryFn: async () => {
-      const { getPayoutMetrics } = await import("@/lib/mock/payouts")
-      return getPayoutMetrics(getFilters())
-    },
+    queryKey: ["payoutMetrics", ...dateKey],
+    queryFn: () => paymentsApi.getPayoutMetrics(getFilters()),
   })
 }
 
 export function useRecentPayouts() {
+  const dateKey = useDateFilterKey()
   return useQuery({
-    queryKey: ["recentPayouts", useDashboardStore.getState().preset],
-    queryFn: async () => {
-      const { getPayouts } = await import("@/lib/mock/payouts")
-      return getPayouts({ ...getFilters(), limit: 5 })
-    },
+    queryKey: ["recentPayouts", ...dateKey],
+    queryFn: () => paymentsApi.getPayouts({ ...getFilters(), limit: 5 }),
   })
 }
 
-export function useProductMetrics() {
-  return useQuery({
-    queryKey: ["productMetrics"],
-    queryFn: async () => {
-      const { getProductMetrics } = await import("@/lib/mock/products")
-      return getProductMetrics()
-    },
-    staleTime: 5 * 60 * 1000,
-  })
-}
-
-export function useShipmentMetrics() {
-  return useQuery({
-    queryKey: ["shipmentMetrics", useDashboardStore.getState().preset],
-    queryFn: async () => {
-      const { getShipmentMetrics } = await import("@/lib/mock/shipments")
-      return getShipmentMetrics(getFilters())
-    },
-    refetchInterval: 60_000,
-  })
-}
-
-export function useSalesOrderMetrics() {
-  return useQuery({
-    queryKey: ["salesOrderMetrics", useDashboardStore.getState().preset],
-    queryFn: async () => {
-      const { getSalesOrderMetrics } = await import("@/lib/mock/sales-orders")
-      return getSalesOrderMetrics(getFilters())
-    },
-    refetchInterval: 60_000,
-  })
-}
-
-export function useSellerMetrics() {
-  return useQuery({
-    queryKey: ["sellerMetrics"],
-    queryFn: async () => {
-      const { getSellerMetrics } = await import("@/lib/mock/sellers")
-      return getSellerMetrics()
-    },
-    staleTime: 60_000,
-  })
-}
+// ── Products (aggregated from Payments + mock) ──────────────
 
 export function useTopProductsByRevenue() {
+  const dateKey = useDateFilterKey()
   return useQuery({
-    queryKey: ["topProductsByRevenue", useDashboardStore.getState().preset],
+    queryKey: ["topProductsByRevenue", ...dateKey],
     queryFn: async () => {
-      const { getPaymentsAll } = await import("@/lib/mock/payments")
-      const payments = await getPaymentsAll(getFilters())
-      const approved = payments.filter((p) => p.status === "approved")
+      const response = await paymentsApi.getPayments({ ...getFilters(), limit: 100 })
+      const approved = response.data.filter((p) => p.status === "approved")
       const productBuckets = new Map<string, { name: string; revenue: number; units: number }>()
 
       for (const p of approved) {
@@ -214,5 +204,153 @@ export function useTopProductsByRevenue() {
         .map(([id, info]) => ({ product_id: id, ...info }))
         .sort((a, b) => b.revenue - a.revenue)
     },
+  })
+}
+
+// ── Prev-period hooks for trend comparison ──────────────────
+
+export function usePrevPaymentMetrics() {
+  const dateKey = useDateFilterKey()
+  return useQuery({
+    queryKey: ["prevPaymentMetrics", ...dateKey],
+    queryFn: () => paymentsApi.getPaymentMetrics(getPrevFilters(getFilters())),
+  })
+}
+
+export function usePrevRevenueTotal() {
+  const dateKey = useDateFilterKey()
+  return useQuery({
+    queryKey: ["prevRevenueTotal", ...dateKey],
+    queryFn: async () => {
+      const data = await paymentsApi.getRevenueTimeSeries(getPrevFilters(getFilters()))
+      return (Array.isArray(data) ? data : []).reduce((s, p) => s + p.value, 0)
+    },
+  })
+}
+
+export function usePrevSettlementMetrics() {
+  const dateKey = useDateFilterKey()
+  return useQuery({
+    queryKey: ["prevSettlementMetrics", ...dateKey],
+    queryFn: () => paymentsApi.getSettlementMetrics(getPrevFilters(getFilters())),
+  })
+}
+
+export function usePrevCommissionTimeSeries() {
+  const dateKey = useDateFilterKey()
+  return useQuery({
+    queryKey: ["prevCommissionTimeSeries", ...dateKey],
+    queryFn: () => paymentsApi.getCommissionTimeSeries(getPrevFilters(getFilters())),
+    select: (data) => (Array.isArray(data) ? data : []) as typeof data,
+  })
+}
+
+export function usePrevPayoutMetrics() {
+  const dateKey = useDateFilterKey()
+  return useQuery({
+    queryKey: ["prevPayoutMetrics", ...dateKey],
+    queryFn: () => paymentsApi.getPayoutMetrics(getPrevFilters(getFilters())),
+  })
+}
+
+export function usePrevShipmentMetrics() {
+  const dateKey = useDateFilterKey()
+  return useQuery({
+    queryKey: ["prevShipmentMetrics", ...dateKey],
+    queryFn: async () => {
+      const { getShipmentMetrics } = await import("@/lib/mock/shipments")
+      return getShipmentMetrics(getPrevFilters(getFilters()))
+    },
+  })
+}
+
+export function usePrevSalesOrderMetrics() {
+  const dateKey = useDateFilterKey()
+  return useQuery({
+    queryKey: ["prevSalesOrderMetrics", ...dateKey],
+    queryFn: async () => {
+      const { getSalesOrderMetrics } = await import("@/lib/mock/sales-orders")
+      return getSalesOrderMetrics(getPrevFilters(getFilters()))
+    },
+  })
+}
+
+export function usePrevProductMetrics() {
+  const dateKey = useDateFilterKey()
+  return useQuery({
+    queryKey: ["prevProductMetrics", ...dateKey],
+    queryFn: async () => {
+      const { getProductMetrics } = await import("@/lib/mock/products")
+      return getProductMetrics()
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function usePrevSellerMetrics() {
+  const dateKey = useDateFilterKey()
+  return useQuery({
+    queryKey: ["prevSellerMetrics", ...dateKey],
+    queryFn: async () => {
+      const { getSellerMetrics } = await import("@/lib/mock/sellers")
+      return getSellerMetrics()
+    },
+    staleTime: 60_000,
+  })
+}
+
+export function usePrevRevenueBySeller() {
+  const dateKey = useDateFilterKey()
+  return useQuery({
+    queryKey: ["prevRevenueBySeller", ...dateKey],
+    queryFn: () => paymentsApi.getRevenueBySeller(getPrevFilters(getFilters())),
+  })
+}
+
+// ── Mocks (no real API yet) ─────────────────────────────────
+
+export function useProductMetrics() {
+  return useQuery({
+    queryKey: ["productMetrics"],
+    queryFn: async () => {
+      const { getProductMetrics } = await import("@/lib/mock/products")
+      return getProductMetrics()
+    },
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
+export function useShipmentMetrics() {
+  const dateKey = useDateFilterKey()
+  return useQuery({
+    queryKey: ["shipmentMetrics", ...dateKey],
+    queryFn: async () => {
+      const { getShipmentMetrics } = await import("@/lib/mock/shipments")
+      return getShipmentMetrics(getFilters())
+    },
+    refetchInterval: 60_000,
+  })
+}
+
+export function useSalesOrderMetrics() {
+  const dateKey = useDateFilterKey()
+  return useQuery({
+    queryKey: ["salesOrderMetrics", ...dateKey],
+    queryFn: async () => {
+      const { getSalesOrderMetrics } = await import("@/lib/mock/sales-orders")
+      return getSalesOrderMetrics(getFilters())
+    },
+    refetchInterval: 60_000,
+  })
+}
+
+export function useSellerMetrics() {
+  return useQuery({
+    queryKey: ["sellerMetrics"],
+    queryFn: async () => {
+      const { getSellerMetrics } = await import("@/lib/mock/sellers")
+      return getSellerMetrics()
+    },
+    staleTime: 60_000,
   })
 }

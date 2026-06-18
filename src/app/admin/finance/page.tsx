@@ -5,12 +5,15 @@ import { KpiCard } from "@/components/analytics/kpi-card"
 import { ChartContainer } from "@/components/analytics/chart-container"
 import { SectionHeader } from "@/components/analytics/section-header"
 import { StatusBadge } from "@/components/analytics/status-badge"
+import { translateStatus } from "@/lib/labels"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { useSettlementMetrics, useCommissionTimeSeries, useSettlementStatusBreakdown, usePendingSettlementsBySeller, useRecentSettlements, usePayoutMetrics, useRecentPayouts } from "@/hooks/use-dashboard-data"
+import { useSettlementMetrics, useCommissionTimeSeries, useSettlementStatusBreakdown, usePendingSettlementsBySeller, useRecentSettlements, usePayoutMetrics, useRecentPayments, usePrevSettlementMetrics, usePrevCommissionTimeSeries, usePrevPayoutMetrics } from "@/hooks/use-dashboard-data"
+import { computeTrend } from "@/lib/trends"
 
 const COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "var(--color-chart-5)"]
 
-function formatARS(cents: number) {
+function formatARS(cents: number | undefined | null) {
+  if (cents == null || Number.isNaN(cents)) return "—"
   return `ARS ${(cents / 100).toLocaleString("es-AR", { minimumFractionDigits: 0 })}`
 }
 
@@ -21,28 +24,38 @@ export default function FinanceDashboardPage() {
   const pendingBySeller = usePendingSettlementsBySeller()
   const recentSettlements = useRecentSettlements()
   const payoutMetrics = usePayoutMetrics()
-  const recentPayouts = useRecentPayouts()
+  const recentPayments = useRecentPayments()
+  const prevSettlementMetrics = usePrevSettlementMetrics()
+  const prevCommission = usePrevCommissionTimeSeries()
+  const prevPayoutMetrics = usePrevPayoutMetrics()
 
   const commissionData = commission.data ?? []
   const totalCommission = commissionData.reduce((s, p) => s + p.value, 0)
+  const prevCommissionData = prevCommission.data ?? []
+  const prevTotalCommission = prevCommissionData.reduce((s, p) => s + p.value, 0)
   const settlementData = settlementMetrics.data
   const statusData = statusBreakdown.data ?? []
   const pendingData = pendingBySeller.data ?? []
   const settlements = recentSettlements.data?.data ?? []
-  const payouts = recentPayouts.data?.data ?? []
+  const payments = recentPayments.data?.data ?? []
+
+  const commissionTrend = computeTrend(prevTotalCommission, totalCommission)
+  const pendingLiqTrend = computeTrend(prevSettlementMetrics.data?.pending_cents, settlementMetrics.data?.pending_cents)
+  const payoutVolTrend = computeTrend(prevPayoutMetrics.data?.total_cents, payoutMetrics.data?.total_cents)
+  const velocityTrend = computeTrend(prevSettlementMetrics.data?.avg_velocity_days, settlementMetrics.data?.avg_velocity_days)
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <SectionHeader title="Finance Dashboard" description="Settlements, payouts, commissions, and liability tracking" />
+      <SectionHeader title="Panel de Finanzas" description="Liquidaciones, pagos, comisiones y seguimiento de pasivos" />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Commission Revenue" value={formatARS(totalCommission)} trend={{ value: "+8% WoW", direction: "up" }} isLoading={settlementMetrics.isLoading} />
-        <KpiCard label="Pending Settlements" value={settlementData ? formatARS(settlementData.pending_cents) : "—"} trend={{ value: "+15%", direction: "up", positive: false }} isLoading={settlementMetrics.isLoading} />
-        <KpiCard label="Payout Volume" value={payoutMetrics.data ? formatARS(payoutMetrics.data.total_cents) : "—"} trend={{ value: "+5% WoW", direction: "up" }} isLoading={payoutMetrics.isLoading} />
-        <KpiCard label="Settlement Velocity" value={settlementData ? `${settlementData.avg_velocity_days} days` : "—"} trend={{ value: "-0.5d WoW", direction: "down", positive: true }} isLoading={settlementMetrics.isLoading} />
+        <KpiCard label="Comisiones" value={formatARS(totalCommission)} trend={commissionTrend ? { value: commissionTrend.label, direction: commissionTrend.direction } : undefined} isLoading={commission.isLoading} />
+        <KpiCard label="Liquidaciones Pendientes" value={settlementData ? formatARS(settlementData.pending_cents) : "—"} trend={pendingLiqTrend ? { value: pendingLiqTrend.label, direction: pendingLiqTrend.direction, positive: false } : undefined} isLoading={settlementMetrics.isLoading} />
+        <KpiCard label="Volumen de Pagos" value={payoutMetrics.data ? formatARS(payoutMetrics.data.total_cents) : "—"} trend={payoutVolTrend ? { value: payoutVolTrend.label, direction: payoutVolTrend.direction } : undefined} isLoading={payoutMetrics.isLoading} />
+        <KpiCard label="Velocidad de Liquidación" value={settlementData ? `${settlementData.avg_velocity_days} días` : "—"} trend={velocityTrend ? { value: velocityTrend.label, direction: velocityTrend.direction, positive: velocityTrend.direction === "down" } : undefined} isLoading={settlementMetrics.isLoading} />
       </div>
 
-      <ChartContainer title="Commission Revenue (Monthly)" isLoading={commission.isLoading} error={commission.error?.message} isEmpty={commissionData.length === 0}>
+      <ChartContainer title="Comisiones (Diario)" isLoading={commission.isLoading} error={commission.error?.message} isEmpty={commissionData.length === 0}>
         <ResponsiveContainer width="100%" height={280}>
           <AreaChart data={commissionData}>
             <defs>
@@ -52,9 +65,9 @@ export default function FinanceDashboardPage() {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-            <XAxis dataKey="date" tick={{ fontSize: 11 }} className="text-muted-foreground" />
+            <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => v.slice(5)} className="text-muted-foreground" />
             <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `ARS ${(v / 100000).toFixed(0)}`} className="text-muted-foreground" />
-            <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "13px" }} formatter={(value) => [formatARS(Number(value ?? 0)), "Commission"]} />
+            <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "13px" }} formatter={(value) => [formatARS(Number(value ?? 0)), "Comisión"]} />
             <Area type="monotone" dataKey="value" stroke="var(--color-chart-3)" fill="url(#commGradient)" strokeWidth={2} />
           </AreaChart>
         </ResponsiveContainer>
@@ -62,18 +75,17 @@ export default function FinanceDashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ChartContainer
-          title="Recent Settlements"
+          title="Liquidaciones Recientes"
           isLoading={recentSettlements.isLoading}
           error={recentSettlements.error?.message}
           isEmpty={settlements.length === 0}
-          action={<a href="#" className="text-xs text-primary hover:underline">View All &rarr;</a>}
         >
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
-                <TableHead>Seller</TableHead>
-                <TableHead>Gross</TableHead>
+                <TableHead>Vendedor</TableHead>
+                <TableHead>Bruto</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -91,26 +103,25 @@ export default function FinanceDashboardPage() {
         </ChartContainer>
 
         <ChartContainer
-          title="Recent Payouts"
-          isLoading={recentPayouts.isLoading}
-          error={recentPayouts.error?.message}
-          isEmpty={payouts.length === 0}
-          action={<a href="#" className="text-xs text-primary hover:underline">View All &rarr;</a>}
+          title="Pagos Recientes"
+          isLoading={recentPayments.isLoading}
+          error={recentPayments.error?.message}
+          isEmpty={payments.length === 0}
         >
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
-                <TableHead>Seller</TableHead>
-                <TableHead>Amount</TableHead>
+                <TableHead>Método</TableHead>
+                <TableHead>Monto</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {payouts.map((p) => (
+              {payments.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-mono text-xs">{p.id}</TableCell>
-                  <TableCell className="text-sm">{p.seller_name}</TableCell>
+                  <TableCell className="text-sm capitalize">{(p.method ?? "—").replace(/_/g, " ")}</TableCell>
                   <TableCell className="text-sm">{formatARS(p.amount_cents)}</TableCell>
                   <TableCell><StatusBadge status={p.status} /></TableCell>
                 </TableRow>
@@ -121,9 +132,9 @@ export default function FinanceDashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <ChartContainer title="Pending Settlement Liability" isLoading={pendingBySeller.isLoading} error={pendingBySeller.error?.message} isEmpty={pendingData.length === 0}>
+        <ChartContainer title="Pasivo de Liquidaciones Pendientes" isLoading={pendingBySeller.isLoading} error={pendingBySeller.error?.message} isEmpty={pendingData.length === 0}>
           {pendingData.length > 0 && (
-            <p className="mb-4 text-2xl font-bold">{formatARS(pendingData.reduce((s, p) => s + p.total_cents, 0))} <span className="text-sm font-normal text-muted-foreground">due to {pendingData.length} sellers</span></p>
+            <p className="mb-4 text-2xl font-bold">{formatARS(pendingData.reduce((s, p) => s + p.total_cents, 0))} <span className="text-sm font-normal text-muted-foreground">pendientes a {pendingData.length} vendedores</span></p>
           )}
           <div className="space-y-3">
             {pendingData.map((item) => {
@@ -144,10 +155,10 @@ export default function FinanceDashboardPage() {
           </div>
         </ChartContainer>
 
-        <ChartContainer title="Settlement Status Breakdown" isLoading={statusBreakdown.isLoading} error={statusBreakdown.error?.message} isEmpty={statusData.length === 0}>
+        <ChartContainer title="Distribución de Estados (Liquidaciones)" isLoading={statusBreakdown.isLoading} error={statusBreakdown.error?.message} isEmpty={statusData.length === 0}>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
-              <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} dataKey="count" nameKey="status" label={({ name, value }) => `${name} (${value})`}>
+              <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} dataKey="count" nameKey="status" label={({ name, value }) => `${translateStatus(name ?? "")} (${value})`}>
                 {statusData.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
               </Pie>
               <Tooltip />

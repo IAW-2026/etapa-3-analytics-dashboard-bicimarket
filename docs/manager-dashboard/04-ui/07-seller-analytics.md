@@ -1,110 +1,121 @@
-# 4.7 — Seller Analytics
+# 4.7 — Analítica de Vendedores
 
 > **Manager Dashboard — UI Design**
 >
-> Seller performance — rankings, settlements, product counts, and verification status.
+> Rendimiento, ranking y estado de verificación de vendedores.
 
 ---
 
 ## Purpose
 
-Enable marketplace managers to monitor seller health, identify top performers, and spot sellers needing attention.
+Permitir a los gerentes del marketplace monitorear la salud de los vendedores, identificar los mejores performers y detectar vendedores que necesitan atención.
 
 ## Layout
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│ Seller Analytics                         [7d ▾] [30d ▾] [Cu▾] │
+│ Analítica de Vendedores                    [Filtro de fecha ▾]     │
 ├─────────────────────────────────────────────────────────────────────┤
 │ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐               │
-│ │ Active   │ │ Pending  │ │ Avg.     │ │ Top      │               │
-│ │ Sellers  │ │ Settle.  │ │ Revenue  │ │ Seller   │               │
+│ │ Vended.  │ │ Liquid.  │ │ Ingreso  │ │ Mejor    │               │
+│ │ Activos  │ │ Pend.    │ │ Promedio │ │ Vendedor │               │
 │ │ 24       │ │ ARS 850K │ │ ARS 342K │ │ BiciSur  │               │
-│ │ —        │ │ 12 sellers│ │ ↑5% MoM  │ │          │               │
+│ │ —        │ │ 12 vend. │ │ ↑5%      │ │          │               │
 │ └──────────┘ └──────────┘ └──────────┘ └──────────┘               │
 │                                                                     │
-│ Seller Ranking (by Revenue)                                         │
-│ ┌──────────────────────────────────────────────────────────────┐    │
-│ │ # Seller     Revenue      Commission  Products  Accept Rate  │    │
-│ │ ──────────────────────────────────────────────────────────── │    │
-│ │ 1  BiciSur   ARS 3.1M    ARS 310K    245        98%         │    │
-│ │ 2  BikeAR    ARS 1.8M    ARS 180K    189        95%         │    │
-│ │ 3  RodadosXX ARS 0.9M    ARS 90K     156        88%         │    │
-│ │ 4  Ciclos OK ARS 0.6M    ARS 60K     78         92%         │    │
-│ │ 5  MTB House ARS 0.4M    ARS 40K     234        78%         │    │
-│ │ 6  ...                                                       │    │
-│ │                                                              │    │
-│ │ [Click row to view seller detail ▸]                          │    │
-│ └──────────────────────────────────────────────────────────────┘    │
-│                                                                     │
-│ ┌────────────────────────────┐    ┌────────────────────────────┐   │
-│ │ Seller Detail Panel        │    │ Seller Settlements         │   │
-│ │ (on row click)             │    │ ────────────────────────── │   │
-│ │ ────────────────────────── │    │ Seller     Pending   Paid  │   │
-│ │ BiciSur                    │    │ BiciSur    ARS 120K  ARS   │   │
-│ │ • Products: 245 active     │    │ BikeAR     ARS 80K   ARS   │   │
-│ │ • Since: Jan 2025          │    │ RodadosXX  ARS 45K   ARS   │   │
-│ │ • Verification: ✅ Verified│    │ Ciclos OK  ARS 20K   ARS   │   │
-│ │ • Last active: Today       │    │ ...                       │   │
-│ │ • Avg response: 2.4 hrs    │    │ [View Full Table ▸]       │   │
-│ │                            │    └────────────────────────────┘   │
-│ │ [Monthly revenue sparkline] │                                     │
-│ └────────────────────────────┘                                     │
-│                                                                     │
-│ Seller Verification Status           Seller Product Count          │
-│ ┌────────────────────────┐          ┌────────────────────────┐    │
-│ │ ✅ Verified    20      │          │ [Bar chart: products   │    │
-│ │ ⏳ Pending      2      │          │  per seller]           │    │
-│ │ ❌ Suspended    1      │          │                        │    │
-│ │ 📝 In Review    1      │          │                        │    │
-│ └────────────────────────┘          └────────────────────────┘    │
+│ Ranking de Vendedores                      │ Estado de Verificación│
+│ ┌─────────────────────────────────────┐   │ ┌───────────────────┐ │
+│ │ #  Vendedor    Ingresos    Acciones │   │ │ Verificado   20   │ │
+│ │ ─────────────────────────────────── │   │ │ Pendiente     2   │ │
+│ │ 1  BiciSur    ARS 3.1M       [Ver] │   │ │ Suspendido    1   │ │
+│ │ 2  BikeAR     ARS 1.8M       [Ver] │   │ └───────────────────┘ │
+│ │ 3  RodadosXX  ARS 0.9M       [Ver] │   │                       │
+│ │ 4  Ciclos OK  ARS 0.6M       [Ver] │   │ Productos por Vend.   │
+│ │ 5  MTB House  ARS 0.4M       [Ver] │   │ ┌───────────────────┐ │
+│ │ ...                               │   │ │ BiciSur    ████ 245│ │
+│ │                                   │   │ │ MTB House  ████ 234│ │
+│ └─────────────────────────────────────┘   │ │ BikeAR     ███  189│ │
+│                                            │ │ RodadosXX  ███  156│ │
+│                                            │ │ Ciclos OK  █    78│ │
+│                                            │ └───────────────────┘ │
+│ Liquidaciones por Vendedor                                         │
+│ ┌──────────────────────────────────────────────────────────────┐   │
+│ │ Vendedor     Pendiente    Pagado        Total                │   │
+│ │ ──────────────────────────────────────────────────────────── │   │
+│ │ BiciSur      ARS 120K     ARS 3.0M    ARS 3.12M             │   │
+│ │ BikeAR       ARS 80K      ARS 1.7M    ARS 1.78M             │   │
+│ │ RodadosXX    ARS 45K      ARS 850K    ARS 895K              │   │
+│ │ ...                                                          │   │
+│ └──────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
+
+Sheet (al hacer clic en "Ver"):
+┌─────────────────────────────────────────────┐
+│  BiciSur                                     │
+│  ─────────────────────────────────────────── │
+│  Estado:    Verificado  (StatusBadge)        │
+│  Productos: 245 activos                      │
+│  Desde:     Ene 2025                         │
+│  Respuesta: 2.4 h promedio                   │
+│                                              │
+│  Liquidaciones Recientes                     │
+│  ┌────────────────────────────────────────┐  │
+│  │ ID      Monto    Fecha      Status     │  │
+│  │ LIQ-10 ARS 45K  10/06    Pagado       │  │
+│  │ LIQ-9  ARS 38K  08/06    Pagado       │  │
+│  │ LIQ-8  ARS 52K  05/06    Pendiente    │  │
+│  └────────────────────────────────────────┘  │
+└─────────────────────────────────────────────┘
 ```
 
 ## Widgets
 
 ### 1. KPI Cards
-- Active sellers, pending settlement total, avg revenue per seller, top seller name
-- **Data Source**: Settlements + Seller App
+- **Component**: `KpiCard` — Vendedores Activos (sin trend), Liquidaciones Pendientes (con trend), Ingreso Promedio (con trend), Mejor Vendedor (sin trend — muestra nombre)
+- **Data Source**: `useSellerMetrics` (mock)
 
-### 2. Seller Ranking Table
-- **Component**: `Table` with sortable columns
-- **Columns**: Rank, Seller name, Revenue, Commission, Products count, Acceptance rate
-- **Data Source**: Cross-reference settlements + products + sales orders
-- **Features**: Click row → expand detail panel
+### 2. Ranking de Vendedores
+- **Component**: `Table` con #, Vendedor, Ingresos, Acciones (botón "Ver")
+- **Data Source**: `useSellerRankings` (mock)
+- **Interaction**: Click en "Ver" → abre `Sheet` con detalle del vendedor
 
-### 3. Seller Detail Panel
-- **Component**: Slide-over panel or expandable section
-- **Shows**: Profile info, product count, verification status, last active, revenue sparkline
-- **Data Source**: Seller App + Payments
+### 3. Estado de Verificación
+- **Component**: `DonutChart`
+- **Data Source**: `useSellerVerificationStatus` (mock)
+- **Labels**: Verificado, Pendiente, Suspendido
 
-### 4. Seller Settlements Table
-- **Component**: Condensed `Table`
-- **Columns**: Seller name, Pending amount, Paid amount, Total
-- **Data Source**: `GET /api/v1/settlements` grouped by seller
+### 4. Productos por Vendedor
+- **Component**: `BarChart` horizontal
+- **Data Source**: `useProductsBySeller` (mock)
 
-### 5. Verification Status
-- **Component**: `DonutChart` + count breakdown
-- **Data Source**: Seller App profiles
+### 5. Liquidaciones por Vendedor
+- **Component**: `Table` full-width
+- **Columns**: Vendedor, Pendiente, Pagado, Total (todos en `formatARS()`)
+- **Data Source**: `useSellerSettlements` (mock)
 
-### 6. Seller Product Count
-- **Component**: Horizontal `BarChart`
-- **Data Source**: `GET /api/v1/products` grouped by seller
+### 6. Sheet de Detalle del Vendedor
+- **Component**: `Sheet` (shadcn) con:
+  - Estado (`StatusBadge` con `translateStatus()`)
+  - Productos: cantidad
+  - Desde: fecha de registro
+  - Respuesta Promedio: en horas
+  - Liquidaciones Recientes: tabla con ID, Monto, Fecha, Status
 
-## States
+## Estados
 
 ### Loading
-- Skeleton table rows
-- Donut chart placeholder
+- Skeleton para filas de tabla
+- Placeholder para DonutChart y BarChart
 
 ### Error
-- "Seller data unavailable. The Seller App may be down."
-- Show settlement-derived data (revenue by seller from payments) as fallback
+- "Datos de vendedores no disponibles — la app de Seller puede estar caída."
+- Mostrar datos derivados de liquidaciones como fallback
 
 ### Empty
-- "No active sellers found."
-- "No seller data for this period."
-
-## Data Source Note
-
-This screen depends on Seller App data. Without admin-level endpoints, seller listing may be incomplete. Revenue data from settlements (Payments App) provides a reliable fallback for the ranking table, but seller names and verification status require Seller App access.
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  No se encontraron vendedores activos para este período.        │
+│                                                                  │
+│  No hay datos de vendedores disponibles.                         │
+└─────────────────────────────────────────────────────────────────┘
+```

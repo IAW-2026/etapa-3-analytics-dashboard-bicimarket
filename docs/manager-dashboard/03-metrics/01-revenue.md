@@ -121,8 +121,8 @@
 **Priority**: P0
 
 **Period Comparisons**:
-- Week-over-Week (WoW): current 7 days vs previous 7 days
-- Month-over-Month (MoM): current month vs previous month
+- vs período anterior (7 días): current 7 days vs previous 7 days
+- vs período anterior (mensual): current month vs previous month
 - Year-over-Year (YoY): current period vs same period last year
 
 ---
@@ -134,9 +134,8 @@
 │ Revenue Dashboard              [7d ▾] [30d ▾] [Custom ▾]      │
 ├─────────────────────────────────────────────────────────────────┤
 │ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐          │
-│ │ GMV       │ │ AOV      │ │ Comm.    │ │ Growth   │          │
-│ │ ARS 8.2M  │ │ ARS 52.5K│ │ ARS 820K │ │ +12% WoW │          │
-│ │ ↑8% vs 7d │ │ ↑3% vs 7d│ │ ↑8% vs 7d│ │          │          │
+│ │ GMV       │ │ Promedio │ │ Comisión │ │ Crecim.  │          │
+│ │ ARS 8.2M  │ │ ARS 52.5K│ │ ARS 820K │ │ +12%     │          │
 │ └──────────┘ └──────────┘ └──────────┘ └──────────┘          │
 │                                                                │
 │ Revenue Trend (Last 30 Days)                                   │

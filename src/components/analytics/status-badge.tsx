@@ -1,6 +1,7 @@
 "use client"
 
 import { cn } from "@/lib/utils"
+import { translateStatus } from "@/lib/labels"
 
 const statusStyles: Record<string, string> = {
   paid: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
@@ -27,7 +28,7 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   const style = statusStyles[status] ?? statusStyles.default
-  const label = status.replace(/_/g, " ")
+  const label = translateStatus(status)
 
   return (
     <span

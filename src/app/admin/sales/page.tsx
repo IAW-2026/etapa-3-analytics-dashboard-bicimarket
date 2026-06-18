@@ -4,11 +4,14 @@ import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { KpiCard } from "@/components/analytics/kpi-card"
 import { ChartContainer } from "@/components/analytics/chart-container"
 import { SectionHeader } from "@/components/analytics/section-header"
-import { usePaymentMetrics, useRevenueTimeSeries, useRevenueByDayOfWeek, useRevenueByMethod, useRevenueBySeller } from "@/hooks/use-dashboard-data"
+import { usePaymentMetrics, useRevenueTimeSeries, useRevenueByDayOfWeek, useRevenueByMethod, useRevenueBySeller, usePrevPaymentMetrics, usePrevRevenueTotal } from "@/hooks/use-dashboard-data"
+import { computeTrend } from "@/lib/trends"
+import { translateMethod } from "@/lib/labels"
 
 const COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "var(--color-chart-5)"]
 
-function formatARS(cents: number) {
+function formatARS(cents: number | undefined | null) {
+  if (cents == null || Number.isNaN(cents)) return "—"
   return `ARS ${(cents / 100).toLocaleString("es-AR", { minimumFractionDigits: 0 })}`
 }
 
@@ -18,33 +21,36 @@ export default function SalesAnalyticsPage() {
   const dayOfWeek = useRevenueByDayOfWeek()
   const byMethod = useRevenueByMethod()
   const topSellers = useRevenueBySeller()
+  const prevMetrics = usePrevPaymentMetrics()
+  const prevRevenue = usePrevRevenueTotal()
 
   const revenueData = revenue.data ?? []
   const totalRevenue = revenueData.reduce((s, p) => s + p.value, 0)
-  const prevRevenue = totalRevenue * 0.92
-  const growth = prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0
+  const ingresosTrend = computeTrend(prevRevenue.data, totalRevenue)
+  const ordersTrend = computeTrend(prevMetrics.data?.count, metrics.data?.count)
+  const ticketTrend = computeTrend(prevMetrics.data?.avg_order_cents, metrics.data?.avg_order_cents)
 
   const methodData = byMethod.data?.map((m) => ({
     ...m,
-    label: m.method.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+    label: translateMethod(m.method),
   })) ?? []
 
   const sellerData = topSellers.data?.slice(0, 10) ?? []
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <SectionHeader title="Sales Analytics" description="Revenue, orders, and sales performance" />
+      <SectionHeader title="Analítica de Ventas" description="Ingresos, órdenes y rendimiento de ventas" />
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Revenue" value={formatARS(totalRevenue)} trend={{ value: `${growth >= 0 ? "+" : ""}${growth.toFixed(0)}% WoW`, direction: growth >= 0 ? "up" : "down" }} isLoading={metrics.isLoading} />
-        <KpiCard label="Orders" value={metrics.data ? metrics.data.count.toLocaleString("es-AR") : "—"} trend={{ value: "+5% WoW", direction: "up" }} isLoading={metrics.isLoading} />
-        <KpiCard label="AOV" value={metrics.data ? formatARS(metrics.data.avg_order_cents) : "—"} trend={{ value: "+3% WoW", direction: "up" }} isLoading={metrics.isLoading} />
-        <KpiCard label="Growth" value={`${growth >= 0 ? "+" : ""}${growth.toFixed(0)}%`} trend={{ value: "vs previous period", direction: growth >= 0 ? "up" : "down" }} isLoading={metrics.isLoading} />
+        <KpiCard label="Ingresos" value={formatARS(totalRevenue)} trend={ingresosTrend ? { value: ingresosTrend.label, direction: ingresosTrend.direction } : undefined} isLoading={metrics.isLoading} />
+        <KpiCard label="Órdenes" value={metrics.data?.count != null ? metrics.data.count.toLocaleString("es-AR") : "—"} trend={ordersTrend ? { value: ordersTrend.label, direction: ordersTrend.direction } : undefined} isLoading={metrics.isLoading} />
+        <KpiCard label="Ticket Promedio" value={metrics.data ? formatARS(metrics.data.avg_order_cents) : "—"} trend={ticketTrend ? { value: ticketTrend.label, direction: ticketTrend.direction } : undefined} isLoading={metrics.isLoading} />
+        <KpiCard label="Crecimiento" value={ingresosTrend?.label ?? "—"} trend={ingresosTrend ? { value: ingresosTrend.label, direction: ingresosTrend.direction } : undefined} isLoading={metrics.isLoading} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <ChartContainer title="Revenue Over Time" isLoading={revenue.isLoading} error={revenue.error?.message} isEmpty={revenueData.length === 0}>
+          <ChartContainer             title="Ingresos en el Tiempo" isLoading={revenue.isLoading} error={revenue.error?.message} isEmpty={revenueData.length === 0}>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={revenueData}>
                 <defs>
@@ -56,20 +62,20 @@ export default function SalesAnalyticsPage() {
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => v.slice(5)} className="text-muted-foreground" />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `ARS ${(v / 100000).toFixed(0)}`} className="text-muted-foreground" />
-                <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "13px" }} formatter={(value) => [formatARS(Number(value ?? 0)), "Revenue"]} />
+                <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "13px" }} formatter={(value) => [formatARS(Number(value ?? 0)), "Ingresos"]} />
                 <Area type="monotone" dataKey="value" stroke="var(--color-chart-1)" fill="url(#salesRevGradient)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </ChartContainer>
         </div>
         <div>
-          <ChartContainer title="Revenue by Method" isLoading={byMethod.isLoading} error={byMethod.error?.message} isEmpty={methodData.length === 0}>
+          <ChartContainer             title="Ingresos por Método" isLoading={byMethod.isLoading} error={byMethod.error?.message} isEmpty={methodData.length === 0}>
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie data={methodData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} dataKey="value" nameKey="label" label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}>
                   {methodData.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
                 </Pie>
-                <Tooltip formatter={(value) => [formatARS(Number(value ?? 0)), "Revenue"]} />
+                <Tooltip formatter={(value) => [formatARS(Number(value ?? 0)), "Ingresos"]} />
               </PieChart>
             </ResponsiveContainer>
           </ChartContainer>
@@ -77,7 +83,7 @@ export default function SalesAnalyticsPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <ChartContainer title="Revenue by Seller (Top 10)" isLoading={topSellers.isLoading} error={topSellers.error?.message} isEmpty={sellerData.length === 0}>
+        <ChartContainer             title="Ingresos por Vendedor (Top 10)" isLoading={topSellers.isLoading} error={topSellers.error?.message} isEmpty={sellerData.length === 0}>
           <div className="space-y-3">
             {sellerData.map((seller, idx) => {
               const maxRevenue = sellerData[0]?.revenue_cents ?? 1
@@ -100,13 +106,13 @@ export default function SalesAnalyticsPage() {
           </div>
         </ChartContainer>
 
-        <ChartContainer title="Revenue by Day of Week" isLoading={dayOfWeek.isLoading} error={dayOfWeek.error?.message} isEmpty={dayOfWeek.data?.length === 0}>
+        <ChartContainer title="Ingresos por Día de la Semana" isLoading={dayOfWeek.isLoading} error={dayOfWeek.error?.message} isEmpty={dayOfWeek.data?.length === 0}>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={dayOfWeek.data}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis dataKey="day" tick={{ fontSize: 11 }} className="text-muted-foreground" />
               <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `ARS ${(v / 100000).toFixed(0)}`} className="text-muted-foreground" />
-              <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "13px" }} formatter={(value) => [formatARS(Number(value ?? 0)), "Revenue"]} />
+              <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "13px" }} formatter={(value) => [formatARS(Number(value ?? 0)), "Ingresos"]} />
               <Bar dataKey="value" fill="var(--color-chart-2)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

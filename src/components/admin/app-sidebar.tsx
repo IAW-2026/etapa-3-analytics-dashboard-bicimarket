@@ -26,14 +26,14 @@ import {
 } from "@/components/ui/sidebar"
 
 const mainNav = [
-  { title: "Executive Overview", href: "/admin", icon: LayoutDashboard },
-  { title: "Sales", href: "/admin/sales", icon: TrendingUp },
-  { title: "Finance", href: "/admin/finance", icon: Wallet },
-  { title: "Operations", href: "/admin/operations", icon: Truck },
-  { title: "Products", href: "/admin/products", icon: Package },
-  { title: "Sellers", href: "/admin/sellers", icon: Store },
-  { title: "Customers", href: "/admin/customers", icon: Users },
-  { title: "AI Copilot", href: "/admin/copilot", icon: Bot },
+  { title: "Panel General", href: "/admin", icon: LayoutDashboard },
+  { title: "Ventas", href: "/admin/sales", icon: TrendingUp },
+  { title: "Finanzas", href: "/admin/finance", icon: Wallet },
+  { title: "Operaciones", href: "/admin/operations", icon: Truck },
+  { title: "Productos", href: "/admin/products", icon: Package },
+  { title: "Vendedores", href: "/admin/sellers", icon: Store },
+  { title: "Clientes", href: "/admin/customers", icon: Users },
+  { title: "Copilot IA", href: "/admin/copilot", icon: Bot },
 ] as const
 
 export function AppSidebar() {
@@ -54,7 +54,7 @@ export function AppSidebar() {
               </span>
               <span className="grid text-left leading-tight">
                 <span className="font-semibold">BiciMarket</span>
-                <span className="text-xs opacity-70">Administration</span>
+                <span className="text-xs opacity-70">Administración</span>
               </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -62,7 +62,7 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Analytics</SidebarGroupLabel>
+          <SidebarGroupLabel>Analítica</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {mainNav.map((item) => (
