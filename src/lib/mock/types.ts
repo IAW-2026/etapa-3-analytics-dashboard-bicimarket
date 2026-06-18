@@ -178,3 +178,12 @@ export interface AttentionItem {
   description: string
   link?: string
 }
+
+export interface Buyer {
+  id: string
+  full_name: string
+  email: string
+  phone: string | null
+  created_at: string
+  orders_count: number
+}

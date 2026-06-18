@@ -138,12 +138,144 @@ The dashboard imports them dynamically in `use-dashboard-data.ts`.
 
 ---
 
-## Buyer App — No endpoint available
+## Buyer App
 
-| # | Endpoint | Required For | Status |
+### Configuración en el Analytics App
+
+El Analytics App necesita dos variables de entorno:
+
+```env
+BUYER_API_URL=https://<dominio-del-buyer-app>   # sin trailing slash
+DASHBOARD_TO_BUYER_SERVICE_TOKEN=<secreto-compartido>
+```
+
+El mismo valor de `DASHBOARD_TO_BUYER_SERVICE_TOKEN` debe estar configurado en el Buyer App. Es el secreto compartido entre ambas apps.
+
+---
+
+### Autenticación (service-to-service)
+
+Todos los requests deben incluir el header:
+
+```
+X-Service-Token: <valor de DASHBOARD_TO_BUYER_SERVICE_TOKEN>
+Content-Type: application/json
+```
+
+**Respuestas de error de auth:**
+
+| Status | `error.code` | Cuándo ocurre |
+|---|---|---|
+| `401` | `INVALID_SERVICE_TOKEN` | Token ausente o no coincide |
+| `500` | `SERVICE_TOKEN_NOT_CONFIGURED` | La env var no está seteada en el Buyer App |
+
+**Formato de error estándar** (todos los endpoints):
+
+```json
+{
+  "error": {
+    "code": "INVALID_SERVICE_TOKEN",
+    "message": "Token de servicio inválido o ausente"
+  }
+}
+```
+
+---
+
+### `GET /api/v1/admin/buyers`
+
+Lista paginada de compradores registrados.
+
+**Request**
+
+```
+GET {BUYER_API_URL}/api/v1/admin/buyers?from=2025-01-01T00:00:00Z&to=2025-03-31T23:59:59Z&page=1&limit=20
+X-Service-Token: ...
+```
+
+**Query params**
+
+| Param | Tipo | Default | Límites | Descripción |
+|---|---|---|---|---|
+| `from` | ISO 8601 | — | — | Filtra compradores cuyo `created_at >= from` |
+| `to` | ISO 8601 | — | — | Filtra compradores cuyo `created_at <= to` |
+| `page` | int | `1` | mínimo 1 | Número de página |
+| `limit` | int | `20` | 1–100 | Tamaño de página |
+
+**Response `200`**
+
+```json
+{
+  "data": [
+    {
+      "id": "bprof_...",
+      "full_name": "Camila Rojas",
+      "email": "camila@example.com",
+      "phone": "+5491112345678",
+      "created_at": "2025-03-01T12:00:00.000Z",
+      "orders_count": 3
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 142,
+    "total_pages": 8,
+    "has_more": true
+  }
+}
+```
+
+**Comportamiento importante:**
+- Ordenado por `created_at DESC`.
+- `orders_count` cuenta **todas** las órdenes históricas del comprador, **no está filtrado por `from`/`to`**. El filtro de fecha solo afecta qué compradores aparecen en la lista.
+- `phone` puede ser `null`.
+- `pagination.total` refleja el total de registros que coinciden con el filtro de fecha (no el total global).
+
+---
+
+### `GET /api/v1/admin/buyers/metrics`
+
+Métricas agregadas de compradores.
+
+**Request**
+
+```
+GET {BUYER_API_URL}/api/v1/admin/buyers/metrics?from=2025-01-01T00:00:00Z&to=2025-03-31T23:59:59Z
+X-Service-Token: ...
+```
+
+**Query params**
+
+| Param | Tipo | Default | Descripción |
 |---|---|---|---|
-| B1 | `GET /api/v1/admin/buyers` | Customer Analytics page | ❌ **Not implemented**. Page shows "requires Buyer App endpoint" banner. KPIs show `—`. Only Payment Method Usage pie chart is rendered (from Payments App). |
-| B2 | `GET /api/v1/admin/buyers/metrics` | Customer Analytics KPIs | ❌ **Not implemented**. Would return `{ total, new_this_period, repeat_rate, at_risk_count }`. |
+| `from` | ISO 8601 | — | Inicio del período |
+| `to` | ISO 8601 | — | Fin del período |
+
+**Response `200`**
+
+```json
+{
+  "total": 142,
+  "new_this_period": 18,
+  "repeat_rate": 34.5,
+  "at_risk_count": 7
+}
+```
+
+**Definición de cada campo:**
+
+| Campo | Tipo | Filtrado por fecha | Descripción |
+|---|---|---|---|
+| `total` | int | No | Total global de compradores registrados. |
+| `new_this_period` | int | Sí (`from`/`to`) | Compradores cuyo `created_at` cae en el rango. Si no se pasan parámetros, devuelve el mismo valor que `total`. |
+| `repeat_rate` | float | No | % de compradores con órdenes que tienen ≥ 2 órdenes. Ej: `34.5` = 34.5%. `0` si ningún comprador tiene órdenes. |
+| `at_risk_count` | int | No (ventana fija de 90 días desde hoy) | Compradores con ≥ 1 orden histórica pero sin órdenes en los últimos 90 días. |
+
+**Edge cases:**
+- `from`/`to` **solo afectan `new_this_period`**. Los otros tres campos son siempre globales, sin importar el rango de fecha enviado.
+- `repeat_rate` es `0` cuando ningún comprador tiene órdenes aún.
+- `at_risk_count` usa una ventana deslizante de 90 días desde el momento en que se ejecuta la query, no desde `to`.
 
 ---
 

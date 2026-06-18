@@ -5,6 +5,7 @@ import { useDashboardStore } from "@/lib/dashboard-store"
 import type { FilterState } from "@/lib/mock/types"
 import { getPrevFilters } from "@/lib/trends"
 import * as paymentsApi from "@/lib/api/payments"
+import * as buyerApi from "@/lib/api/buyer"
 
 function getFilters() {
   const s = useDashboardStore.getState()
@@ -352,5 +353,32 @@ export function useSellerMetrics() {
       return getSellerMetrics()
     },
     staleTime: 60_000,
+  })
+}
+
+// ── Buyer App ────────────────────────────────────────────────
+
+export function useBuyerMetrics() {
+  const dateKey = useDateFilterKey()
+  return useQuery({
+    queryKey: ["buyerMetrics", ...dateKey],
+    queryFn: () => buyerApi.getBuyerMetrics(getFilters()),
+    refetchInterval: 60_000,
+  })
+}
+
+export function usePrevBuyerMetrics() {
+  const dateKey = useDateFilterKey()
+  return useQuery({
+    queryKey: ["prevBuyerMetrics", ...dateKey],
+    queryFn: () => buyerApi.getBuyerMetrics(getPrevFilters(getFilters())),
+  })
+}
+
+export function useBuyers({ limit = 100 }: { limit?: number } = {}) {
+  const dateKey = useDateFilterKey()
+  return useQuery({
+    queryKey: ["buyers", ...dateKey, limit],
+    queryFn: () => buyerApi.getBuyers({ ...getFilters(), limit }),
   })
 }
