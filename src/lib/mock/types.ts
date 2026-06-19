@@ -4,8 +4,8 @@ export interface PaginatedResponse<T> {
     page: number
     limit: number
     total: number
-    totalPages: number
-    hasMore: boolean
+    total_pages: number
+    has_more: boolean
   }
 }
 
@@ -142,10 +142,9 @@ export interface Shipment {
 export interface SellerProfile {
   id: string
   display_name: string
-  verification_status: "pending_review" | "verified" | "suspended" | "in_review"
+  verification_status: "pending_review" | "verified" | "suspended"
   created_at: string
   product_count: number
-  avg_response_time_hours: number
 }
 
 export interface BuyerProfile {

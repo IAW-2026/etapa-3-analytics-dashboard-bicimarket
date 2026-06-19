@@ -10,7 +10,7 @@ export async function getProducts(
   const start = (page - 1) * limit
   return {
     data: data.slice(start, start + limit),
-    pagination: { page, limit, total: data.length, totalPages: Math.ceil(data.length / limit), hasMore: start + limit < data.length },
+    pagination: { page, limit, total: data.length, total_pages: Math.ceil(data.length / limit), has_more: start + limit < data.length },
   }
 }
 

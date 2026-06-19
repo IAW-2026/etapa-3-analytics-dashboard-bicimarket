@@ -8,9 +8,8 @@ import { SectionHeader } from "@/components/analytics/section-header"
 import { StatusBadge } from "@/components/analytics/status-badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { useRevenueBySeller, useSettlementMetrics, useSellerMetrics, usePrevSettlementMetrics, usePrevSellerMetrics, usePrevRevenueBySeller } from "@/hooks/use-dashboard-data"
+import { useRevenueBySeller, useSettlementMetrics, useSellerMetrics, usePendingSettlementsBySeller, usePrevSettlementMetrics, usePrevSellerMetrics, usePrevRevenueBySeller, useSellers } from "@/hooks/use-dashboard-data"
 import { computeTrend } from "@/lib/trends"
-import { mockData } from "@/lib/mock/mock-data"
 import { translateStatus } from "@/lib/labels"
 
 const COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "var(--color-chart-5)"]
@@ -24,9 +23,11 @@ export default function SellerAnalyticsPage() {
   const topSellers = useRevenueBySeller()
   const settlementMetrics = useSettlementMetrics()
   const sellerMetrics = useSellerMetrics()
+  const pendingSettlements = usePendingSettlementsBySeller()
   const prevSettlementMetrics = usePrevSettlementMetrics()
   const prevSellerMetrics = usePrevSellerMetrics()
   const prevTopSellers = usePrevRevenueBySeller()
+  const sellers = useSellers()
   const [selectedSeller, setSelectedSeller] = useState<string | null>(null)
 
   const sellerData = topSellers.data ?? []
@@ -42,10 +43,8 @@ export default function SellerAnalyticsPage() {
   const pendingLiqTrend = computeTrend(psm?.pending_cents, sm?.pending_cents)
   const avgRevenueTrend = computeTrend(prevAvgRevenue, avgRevenue)
 
-  const selectedProfile = selectedSeller ? mockData.sellers.find((s) => s.id === selectedSeller) : null
-  const selectedSettlements = selectedSeller
-    ? mockData.settlements.filter((s) => s.seller_profile_id === selectedSeller)
-    : []
+  const sellerList = sellers.data?.data ?? []
+  const selectedProfile = selectedSeller ? sellerList.find((s) => s.id === selectedSeller) : null
 
   const verificationData = selm
     ? [
@@ -102,9 +101,9 @@ export default function SellerAnalyticsPage() {
             </ResponsiveContainer>
           </ChartContainer>
 
-          <ChartContainer title="Productos por Vendedor" isLoading={sellerMetrics.isLoading} isEmpty={mockData.sellers.length === 0}>
+          <ChartContainer title="Productos por Vendedor" isLoading={sellers.isLoading} isEmpty={sellerList.length === 0}>
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={mockData.sellers.map((s) => ({ name: s.display_name, count: s.product_count }))} layout="vertical">
+              <BarChart data={sellerList.map((s) => ({ name: s.display_name, count: s.product_count }))} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                 <XAxis type="number" tick={{ fontSize: 11 }} className="text-muted-foreground" />
                 <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} className="text-muted-foreground" width={90} />
@@ -116,32 +115,21 @@ export default function SellerAnalyticsPage() {
         </div>
       </div>
 
-      <ChartContainer title="Liquidaciones por Vendedor" isLoading={false} isEmpty={mockData.settlements.length === 0}>
+      <ChartContainer title="Liquidaciones Pendientes por Vendedor" isLoading={pendingSettlements.isLoading} error={pendingSettlements.error?.message} isEmpty={(pendingSettlements.data?.length ?? 0) === 0}>
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Seller</TableHead>
-                <TableHead>Pendiente</TableHead>
-                <TableHead>Pagado</TableHead>
-              <TableHead>Total</TableHead>
+              <TableHead>Vendedor</TableHead>
+              <TableHead className="text-right">Monto Pendiente</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockData.sellers.map((seller) => {
-              const sellerSettlements = mockData.settlements.filter((s) => s.seller_profile_id === seller.id)
-              const pending = sellerSettlements.filter((s) => s.status === "pending").reduce((sum, s) => sum + s.net_amount_cents, 0)
-              const paid = sellerSettlements.filter((s) => s.status === "paid").reduce((sum, s) => sum + s.net_amount_cents, 0)
-              const total = pending + paid
-              if (total === 0) return null
-              return (
-                <TableRow key={seller.id}>
-                  <TableCell className="text-sm font-medium">{seller.display_name}</TableCell>
-                  <TableCell className="text-sm">{pending > 0 ? formatARS(pending) : "—"}</TableCell>
-                  <TableCell className="text-sm">{paid > 0 ? formatARS(paid) : "—"}</TableCell>
-                  <TableCell className="text-sm font-medium">{formatARS(total)}</TableCell>
-                </TableRow>
-              )
-            })}
+            {(pendingSettlements.data ?? []).map((s) => (
+              <TableRow key={s.seller_profile_id}>
+                <TableCell className="text-sm font-medium">{s.seller_name}</TableCell>
+                <TableCell className="text-right text-sm">{formatARS(s.total_cents)}</TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </ChartContainer>
@@ -152,36 +140,18 @@ export default function SellerAnalyticsPage() {
             <SheetTitle>{selectedProfile?.display_name ?? "Detalle del Vendedor"}</SheetTitle>
           </SheetHeader>
           {selectedProfile && (
-            <div className="mt-6 space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Estado</span>
-                  <StatusBadge status={selectedProfile.verification_status} />
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Productos</span>
-                  <span>{selectedProfile.product_count} activos</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Desde</span>
-                  <span>{new Date(selectedProfile.created_at).toLocaleDateString("es-AR")}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Respuesta Promedio</span>
-                  <span>{selectedProfile.avg_response_time_hours}h</span>
-                </div>
+            <div className="mt-6 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Estado</span>
+                <StatusBadge status={selectedProfile.verification_status} />
               </div>
-              <div>
-                <h4 className="mb-2 text-sm font-medium">Liquidaciones Recientes</h4>
-                <div className="space-y-2">
-                  {selectedSettlements.slice(0, 5).map((s) => (
-                    <div key={s.id} className="flex items-center justify-between rounded-md border p-2 text-sm">
-                      <span className="font-mono text-xs">{s.id}</span>
-                      <StatusBadge status={s.status} />
-                      <span>{formatARS(s.net_amount_cents)}</span>
-                    </div>
-                  ))}
-                </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Productos</span>
+                <span>{selectedProfile.product_count} activos</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Desde</span>
+                <span>{new Date(selectedProfile.created_at).toLocaleDateString("es-AR")}</span>
               </div>
             </div>
           )}

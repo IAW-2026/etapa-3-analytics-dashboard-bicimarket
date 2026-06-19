@@ -18,7 +18,7 @@ export async function getSalesOrders(
   const start = (page - 1) * limit
   return {
     data: filtered.slice(start, start + limit),
-    pagination: { page, limit, total: filtered.length, totalPages: Math.ceil(filtered.length / limit), hasMore: start + limit < filtered.length },
+    pagination: { page, limit, total: filtered.length, total_pages: Math.ceil(filtered.length / limit), has_more: start + limit < filtered.length },
   }
 }
 
