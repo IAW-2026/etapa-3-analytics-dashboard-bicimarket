@@ -34,9 +34,8 @@ export default function OperationsDashboardPage() {
 
   const funnelData = [
     { stage: "Pagado", count: som?.total ?? 0 },
-    { stage: "Aceptado", count: som?.accepted_count ?? 0 },
-    { stage: "Enviado", count: (sm?.in_transit_count ?? 0) + (sm?.delivered_count ?? 0) },
-    { stage: "Entregado", count: sm?.delivered_count ?? 0 },
+    { stage: "Aceptado", count: som?.accepted_and_beyond_count ?? 0 },
+    { stage: "Entregado", count: som?.delivered_count ?? 0 },
   ]
 
   const backlogData = sm?.backlog_by_status.map((b) => ({
@@ -60,7 +59,7 @@ export default function OperationsDashboardPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <ChartContainer
           title="Embudo de Cumplimiento"
-          isLoading={shipmentMetrics.isLoading || salesOrderMetrics.isLoading}
+          isLoading={salesOrderMetrics.isLoading}
           isEmpty={funnelData.every((f) => f.count === 0)}
         >
           <div className="space-y-4">

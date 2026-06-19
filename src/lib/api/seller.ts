@@ -66,6 +66,7 @@ export async function getSalesOrderMetrics(filters?: Partial<FilterState>) {
     total: number
     pending_count: number
     accepted_count: number
+    accepted_and_beyond_count: number
     delivered_count: number
     acceptance_rate: number
     pending_by_seller: { seller_profile_id: string; seller_name: string; count: number; oldest_date: string }[]
