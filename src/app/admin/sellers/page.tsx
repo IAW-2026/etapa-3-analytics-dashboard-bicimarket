@@ -45,6 +45,7 @@ export default function SellerAnalyticsPage() {
 
   const sellerList = sellers.data?.data ?? []
   const selectedProfile = selectedSeller ? sellerList.find((s) => s.id === selectedSeller) : null
+  const selectedRevenue = selectedSeller ? sellerData.find((s) => s.seller_profile_id === selectedSeller)?.revenue_cents : null
 
   const verificationData = selm
     ? [
@@ -140,17 +141,39 @@ export default function SellerAnalyticsPage() {
             <SheetTitle>{selectedProfile?.display_name ?? "Detalle del Vendedor"}</SheetTitle>
           </SheetHeader>
           {selectedProfile && (
-            <div className="mt-6 space-y-2">
+            <div className="mt-6 space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Estado</span>
                 <StatusBadge status={selectedProfile.verification_status} />
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Productos</span>
-                <span>{selectedProfile.product_count} activos</span>
+                <span className="text-muted-foreground">Razón social</span>
+                <span className="text-right">{selectedProfile.legal_name}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Desde</span>
+                <span className="text-muted-foreground">CUIT/CUIL</span>
+                <span className="font-mono">{selectedProfile.tax_id}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Condición fiscal</span>
+                <span className="capitalize">{selectedProfile.tax_condition.replace(/_/g, " ")}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">CBU/Alias</span>
+                <span className="font-mono text-xs">{selectedProfile.bank_account_reference}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Productos activos</span>
+                <span>{selectedProfile.product_count}</span>
+              </div>
+              {selectedRevenue != null && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Ingresos (período)</span>
+                  <span className="font-medium">{formatARS(selectedRevenue)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Miembro desde</span>
                 <span>{new Date(selectedProfile.created_at).toLocaleDateString("es-AR")}</span>
               </div>
             </div>

@@ -21,8 +21,8 @@ export async function getPayments(
       page,
       limit,
       total: filtered.length,
-      totalPages: Math.ceil(filtered.length / limit),
-      hasMore: start + limit < filtered.length,
+      total_pages: Math.ceil(filtered.length / limit),
+      has_more: start + limit < filtered.length,
     },
   }
 }

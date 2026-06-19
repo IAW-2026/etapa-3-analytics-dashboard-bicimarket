@@ -32,6 +32,10 @@ function dateParams(filters?: Partial<FilterState>) {
 export interface SellerProfileItem {
   id: string
   display_name: string
+  legal_name: string
+  tax_id: string
+  tax_condition: string
+  bank_account_reference: string
   verification_status: "pending_review" | "verified" | "suspended"
   product_count: number
   created_at: string

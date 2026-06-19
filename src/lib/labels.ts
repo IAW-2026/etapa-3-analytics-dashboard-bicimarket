@@ -13,6 +13,7 @@ export const STATUS_LABELS: Record<string, string> = {
   rejected: "Rechazado",
   cancelled: "Cancelado",
   suspended: "Suspendido",
+  pending_review: "Pendiente de revisión",
   refunded: "Reembolsado",
   Verified: "Verificado",
   Pending: "Pendiente",
