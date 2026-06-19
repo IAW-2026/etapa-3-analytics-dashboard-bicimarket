@@ -35,7 +35,7 @@ export default function OperationsDashboardPage() {
   const funnelData = [
     { stage: "Pagado", count: som?.total ?? 0 },
     { stage: "Aceptado", count: som?.accepted_count ?? 0 },
-    { stage: "Enviado", count: sm?.delivered_count ?? 0 },
+    { stage: "Enviado", count: (sm?.in_transit_count ?? 0) + (sm?.delivered_count ?? 0) },
     { stage: "Entregado", count: sm?.delivered_count ?? 0 },
   ]
 

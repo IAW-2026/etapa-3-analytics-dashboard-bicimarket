@@ -136,45 +136,61 @@ export default function SellerAnalyticsPage() {
       </ChartContainer>
 
       <Sheet open={!!selectedSeller} onOpenChange={(open) => { if (!open) setSelectedSeller(null) }}>
-        <SheetContent>
-          <SheetHeader>
-            <SheetTitle>{selectedProfile?.display_name ?? "Detalle del Vendedor"}</SheetTitle>
+        <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+          <SheetHeader className="pb-0">
+            <div className="flex items-start gap-4">
+              <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
+                {selectedProfile?.display_name?.slice(0, 2).toUpperCase() ?? "??"}
+              </div>
+              <div className="min-w-0 flex-1">
+                <SheetTitle className="text-lg leading-tight">{selectedProfile?.display_name ?? "Detalle del Vendedor"}</SheetTitle>
+                {selectedProfile && (
+                  <p className="mt-0.5 truncate text-sm text-muted-foreground">{selectedProfile.legal_name}</p>
+                )}
+                {selectedProfile && (
+                  <div className="mt-2">
+                    <StatusBadge status={selectedProfile.verification_status} />
+                  </div>
+                )}
+              </div>
+            </div>
           </SheetHeader>
+
           {selectedProfile && (
-            <div className="mt-6 space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Estado</span>
-                <StatusBadge status={selectedProfile.verification_status} />
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Razón social</span>
-                <span className="text-right">{selectedProfile.legal_name}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">CUIT/CUIL</span>
-                <span className="font-mono">{selectedProfile.tax_id}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Condición fiscal</span>
-                <span className="capitalize">{selectedProfile.tax_condition.replace(/_/g, " ")}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">CBU/Alias</span>
-                <span className="font-mono text-xs">{selectedProfile.bank_account_reference}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Productos activos</span>
-                <span>{selectedProfile.product_count}</span>
-              </div>
-              {selectedRevenue != null && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Ingresos (período)</span>
-                  <span className="font-medium">{formatARS(selectedRevenue)}</span>
+            <div className="mt-6 space-y-6">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border bg-muted/40 p-3">
+                  <p className="text-xs text-muted-foreground">Productos activos</p>
+                  <p className="mt-1 text-2xl font-bold">{selectedProfile.product_count}</p>
                 </div>
-              )}
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Miembro desde</span>
-                <span>{new Date(selectedProfile.created_at).toLocaleDateString("es-AR")}</span>
+                <div className="rounded-lg border bg-muted/40 p-3">
+                  <p className="text-xs text-muted-foreground">Ingresos del período</p>
+                  <p className="mt-1 text-sm font-bold">{selectedRevenue != null ? formatARS(selectedRevenue) : "—"}</p>
+                </div>
+                <div className="col-span-2 rounded-lg border bg-muted/40 p-3">
+                  <p className="text-xs text-muted-foreground">Miembro desde</p>
+                  <p className="mt-1 text-sm font-medium">
+                    {new Date(selectedProfile.created_at).toLocaleDateString("es-AR", { year: "numeric", month: "long", day: "numeric" })}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Datos Fiscales</p>
+                <div className="space-y-0 divide-y rounded-lg border">
+                  <div className="p-3">
+                    <p className="text-xs text-muted-foreground">CUIT / CUIL</p>
+                    <p className="mt-0.5 font-mono text-sm font-medium">{selectedProfile.tax_id}</p>
+                  </div>
+                  <div className="p-3">
+                    <p className="text-xs text-muted-foreground">Condición fiscal</p>
+                    <p className="mt-0.5 text-sm capitalize">{selectedProfile.tax_condition.replace(/_/g, " ")}</p>
+                  </div>
+                  <div className="p-3">
+                    <p className="text-xs text-muted-foreground">CBU / Alias bancario</p>
+                    <p className="mt-0.5 break-all font-mono text-xs">{selectedProfile.bank_account_reference}</p>
+                  </div>
+                </div>
               </div>
             </div>
           )}
