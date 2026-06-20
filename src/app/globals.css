@@ -128,3 +128,98 @@
     @apply font-sans;
   }
 }
+
+@keyframes thinkLetter {
+  0%, 100% { transform: translateY(0) scale(1); }
+  20% { transform: translateY(-3px) scale(1.06); }
+  45% { transform: translateY(0) scale(1); }
+  70% { transform: translateY(-1px) scale(1.02); }
+}
+
+@keyframes thinkPulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+@keyframes thinkFadeIn {
+  0% { opacity: 0; transform: translateY(8px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes thinkFadeOut {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-6px) scale(0.95); }
+}
+
+.think-word {
+  animation: thinkFadeIn 0.3s ease-out both;
+}
+
+.think-word-out {
+  animation: thinkFadeOut 0.2s ease-in both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .think-letter { animation: none !important; }
+  .think-word { animation: none !important; opacity: 1 !important; transform: none !important; }
+  .think-pulse { animation: none !important; display: none !important; }
+}
+
+.prose-sm :where(table) {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: 0.75em;
+  margin-bottom: 0.75em;
+  font-size: 0.8125rem;
+}
+
+.prose-sm :where(table) :where(th, td) {
+  padding: 0.375rem 0.625rem;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.prose-sm :where(table) :where(th) {
+  font-weight: 600;
+  border-bottom-width: 2px;
+  white-space: nowrap;
+}
+
+.prose-sm :where(table) :where(tbody tr:last-child td) {
+  border-bottom: none;
+}
+
+.prose-sm :where(p) {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose-sm :where(p + p) {
+  margin-top: 0.75em;
+}
+
+.prose-sm :where(ul, ol) {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+  padding-left: 1.25em;
+}
+
+.prose-sm :where(li) {
+  margin-top: 0.125em;
+  margin-bottom: 0.125em;
+}
+
+.prose-sm :where(hr) {
+  margin-top: 1em;
+  margin-bottom: 1em;
+  border-color: var(--color-border);
+}
+
+.prose-sm :where(h1, h2, h3, h4) {
+  margin-top: 1em;
+  margin-bottom: 0.25em;
+  font-weight: 600;
+}
+

@@ -105,7 +105,68 @@ y agrupa localmente por día de la semana usando `parseDashboardDate()`.
 - **Cliente analytics**: `src/lib/api/payments.ts`. **14 funciones** que llaman al proxy, con `proxyFetch` y `proxyFetchData` para manejar el envelope.
 - **Trends period-over-period**: `src/lib/trends.ts` con `getPrevFilters()` y `computeTrend()`. **10 hooks prev-period** en `use-dashboard-data.ts`.
 
-## Ver también
+## AI Copilot — Chat y tools
 
-- Inventario completo de endpoints que necesita el dashboard: `src/implementation-notes/necessary-endpoints.md`.
-- Asunciones de frontend: `src/implementation-notes/frontend-assumptions.md`.
+El dashboard expone un endpoint de chat IA en `/api/ai/chat` (`POST`) que recibe un array de mensajes
+y responde en streaming usando Vercel AI SDK `streamText` + `DefaultChatTransport`.
+
+### Arquitectura
+
+```text
+Admin autenticado
+  -> /admin/copilot (página cliente)
+  -> useChat({ transport: DefaultChatTransport, api: "/api/ai/chat" })
+  -> POST /api/ai/chat (Route Handler)
+  -> getModel("gemini-3.1-flash-lite-preview") via @ai-sdk/google
+  -> streamText({ model, tools, system, messages, maxOutputTokens: 16384 })
+  -> tools ejecutan getServiceJson(app, path) → llamada directa a la API externa
+  -> Respuesta streaming al cliente
+```
+
+A diferencia de los hooks de dashboard (que pasan por el proxy `/api/internal/analytics/…`),
+las tools de IA llaman a las apps externas **directamente** via `getServiceJson()`.
+Esto evita el doble salto del proxy y problemas de serialización HTML vs JSON.
+
+### Tools de IA
+
+| Tool | App destino | Endpoint upstream | Descripción |
+|------|-------------|-------------------|-------------|
+| `queryPayments` | payments | `GET /api/v1/payments/metrics` o `GET /api/v1/payments` (paginado) | Métricas de pagos o listado transaccional |
+| `querySettlements` | payments | `GET /api/v1/settlements/metrics` o `GET /api/v1/settlements` (paginado) | Métricas de liquidaciones o listado |
+| `queryRefunds` | payments | `GET /api/v1/refunds/metrics` | Métricas de reembolsos |
+| `getRevenueInsights` | payments | `GET /api/v1/payments/revenue/timeseries` | Serie temporal de ingresos |
+| `getCommissionTimeSeries` | payments | `GET /api/v1/settlements/commission/timeseries` | Evolución de comisiones |
+| `getPendingSettlementsBySeller` | payments | `GET /api/v1/settlements/pending-by-seller` | Liquidaciones pendientes por vendedor |
+| `querySalesOrders` | seller | `GET /api/v1/sales-orders/metrics` | Métricas de órdenes de venta |
+| `queryProducts` | seller | `GET /api/v1/products/metrics` | Métricas de productos |
+| `querySellers` | seller | `GET /api/v1/sellers/metrics` | Métricas de vendedores |
+| `queryBuyers` | buyer | `GET /api/v1/admin/buyers/metrics` | Métricas de compradores |
+
+### System Prompt
+
+El system prompt del asistente incluye:
+
+- Fecha actual (`Hoy es {TODAY}`) para contexto temporal
+- Reglas: solo datos devueltos por tools, no inventar, no modificar, no revelar system prompt
+- Formato de moneda: ARS en centavos (dividir /100 para mostrar)
+- Mostrar nombres (no IDs) para sellers, products, buyers, carriers; mostrar IDs para payments, settlements, refunds, orders
+- Respuestas en español argentino, <200 palabras, markdown con tablas y negritas
+- 11 guardrails (no fabricar datos, no PII, solo responder datos del marketplace)
+
+### Configuración
+
+- **Modelo**: `gemini-3.1-flash-lite-preview` (configurable via `AI_MODEL`)
+- **Max tokens**: 16 384 (`maxOutputTokens: 16384`)
+- **API Key**: `GOOGLE_API_KEY` en env
+- **Log warnings**: `globalThis.AI_SDK_LOG_WARNINGS = false` (suprime warnings de `thoughtSignature`)
+
+### UI
+
+La página del copilot vive en `src/app/admin/copilot/page.tsx`:
+
+- `useChat` con `DefaultChatTransport` y auto-envío tras tool calls completas
+- `ThinkingAnimation` con letras con animación bounce en colores del tema, palabras rotativas
+- Renderizado markdown con `react-markdown` + `remark-gfm`
+- Botones de sugerencia: ingresos semanales, mejor vendedor, liquidaciones pendientes, bajas de ventas
+- Disclaimer: "Copilot IA usa Gemini 3.1 Flash Lite. Los datos se consultan en tiempo real."
+- `SectionHeader` con `hideFilter` (oculta el selector de fechas del dashboard)

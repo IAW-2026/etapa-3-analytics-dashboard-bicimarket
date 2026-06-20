@@ -47,7 +47,6 @@ export async function GET(
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        "Content-Type": "application/json",
         "X-Service-Token": token,
         "X-Request-Id": crypto.randomUUID(),
       },

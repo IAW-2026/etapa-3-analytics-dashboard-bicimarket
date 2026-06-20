@@ -162,3 +162,71 @@ const acceptedTokens = [
 
 El nombre puede variar por repo, pero el secreto debe ser específico para el
 par Dashboard -> App.
+
+## AI Copilot
+
+El dashboard incluye un asistente conversacional IA en `/admin/copilot` que permite
+consultar datos del marketplace en lenguaje natural.
+
+### Arquitectura
+
+```text
+Admin autenticado
+  -> /admin/copilot (página cliente con useChat)
+  -> POST /api/ai/chat (Route Handler)
+  -> streamText({ model, tools, system, messages, maxOutputTokens: 16384 })
+  -> tools ejecutan getServiceJson(app, path)
+  -> Llamada directa a Payments / Seller / Buyer API con X-Service-Token
+  -> Respuesta streaming al cliente con markdown + tool calls
+```
+
+**Diferencia clave con el proxy**: las tools de IA llaman a las apps externas
+**directamente** via `getServiceJson()` en lugar de pasar por el Route Handler
+proxy. Esto evita el doble salto y problemas de serialización HTML vs JSON.
+
+### Tools (10)
+
+Las tools están definidas en `src/lib/ai/tools/index.ts` y cubren:
+
+| Dominio | Tools |
+|---------|-------|
+| **Payments** | `queryPayments`, `querySettlements`, `queryRefunds`, `getRevenueInsights`, `getCommissionTimeSeries`, `getPendingSettlementsBySeller` |
+| **Sellers** | `querySalesOrders`, `queryProducts`, `querySellers` |
+| **Buyers** | `queryBuyers` |
+
+Cada tool usa `dynamicTool` de Vercel AI SDK con esquema Zod y ejecuta
+`getServiceJson(app, path)` para obtener datos en tiempo real.
+
+### Modelo
+
+- **Provider**: `@ai-sdk/google` con `createGoogleGenerativeAI`
+- **Modelo por defecto**: `gemini-3.1-flash-lite-preview` (configurable via `AI_MODEL`)
+- **Max tokens**: 16 384
+- **API Key**: `GOOGLE_API_KEY` en env
+
+### Chat route (`/api/ai/chat`)
+
+Endpoint `POST` en `src/app/api/ai/chat/route.ts`:
+
+1. Verifica admin autenticado via `getAdminUser()`
+2. Convierte mensajes con `convertToModelMessages`
+3. Llama a `streamText` con model, tools y system prompt
+4. Retorna `result.toUIMessageStreamResponse`
+5. `globalThis.AI_SDK_LOG_WARNINGS = false` suprime warnings de `thoughtSignature`
+
+### System Prompt
+
+Incluye fecha actual, personalidad de analista senior, reglas (solo datos reales,
+no modificar, no revelar system prompt), formato de respuesta (markdown, ARS,
+bold para métricas clave), y 11 guardrails.
+
+### UI
+
+- `src/app/admin/copilot/page.tsx`: página full-height con `ScrollArea`, input,
+  avatares Bot/User, renderizado markdown, `ThinkingAnimation`, botones de
+  sugerencia, sección de error con botón reintentar, disclaimer
+- `src/components/ai/thinking-animation.tsx`: palabra rotativa animada con
+  letras en colores del tema (`--color-chart-*`, `--color-primary`, `--color-ring`),
+  con soporte `prefers-reduced-motion`
+- `src/components/analytics/section-header.tsx`: prop `hideFilter` para ocultar
+  el selector de fechas en la página del copilot

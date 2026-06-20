@@ -5,9 +5,10 @@ import { DateRangeFilter } from "@/components/analytics/date-range-filter"
 interface SectionHeaderProps {
   title: string
   description: string
+  hideFilter?: boolean
 }
 
-export function SectionHeader({ title, description }: SectionHeaderProps) {
+export function SectionHeader({ title, description, hideFilter }: SectionHeaderProps) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div>
@@ -15,7 +16,7 @@ export function SectionHeader({ title, description }: SectionHeaderProps) {
         <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       </div>
-      <DateRangeFilter />
+      {!hideFilter && <DateRangeFilter />}
     </div>
   )
 }
