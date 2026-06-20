@@ -153,6 +153,51 @@ export const dashboardTools = {
       return getServiceJson("buyer", `/api/v1/admin/buyers/metrics${toParams(from, to)}`)
     },
   }),
+
+  forecastRevenue: dynamicTool({
+    description:
+      "Obtener datos históricos de ingresos para proyectar ingresos futuros. " +
+      "Devuelve la serie temporal de ingresos que el asistente usa para identificar tendencias " +
+      "y generar un pronóstico. Útil para responder preguntas como '¿cómo serán los ingresos el próximo mes?'",
+    inputSchema: z.object({
+      from: z.string().describe("Fecha inicio (ISO string) — al menos 3 meses atrás para pronóstico confiable"),
+      to: z.string().optional().describe("Fecha fin (ISO string)"),
+    }),
+    execute: async (args: unknown) => {
+      const { from, to } = args as { from: string; to?: string }
+      return getServiceJson("payments", `/api/v1/payments/revenue/timeseries${toParams(from, to)}`)
+    },
+  }),
+
+  generateChartData: dynamicTool({
+    description:
+      "Formatear datos estructurados para generar una visualización inline. " +
+      "Recibe datos y tipo de gráfico y los devuelve en formato estandarizado para renderizado.",
+    inputSchema: z.object({
+      chartType: z.enum(["line", "bar", "pie"]).describe("Tipo de gráfico"),
+      title: z.string().describe("Título del gráfico"),
+      labels: z.array(z.string()).describe("Etiquetas para el eje X o categorías"),
+      values: z.array(z.number()).describe("Valores numéricos"),
+      series: z
+        .array(z.object({ name: z.string(), data: z.array(z.number()) }))
+        .optional()
+        .describe("Series adicionales para gráficos multi-línea"),
+    }),
+    execute: async (args: unknown) => {
+      const data = args as {
+        chartType: "line" | "bar" | "pie"
+        title: string
+        labels: string[]
+        values: number[]
+        series?: { name: string; data: number[] }[]
+      }
+      return {
+        type: "chart" as const,
+        ...data,
+        generatedAt: new Date().toISOString(),
+      }
+    },
+  }),
 }
 
 export type DashboardToolName = keyof typeof dashboardTools

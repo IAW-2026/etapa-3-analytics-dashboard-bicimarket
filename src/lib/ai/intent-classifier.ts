@@ -6,20 +6,18 @@ export type Intent =
   | "compare"
   | "analyze"
   | "forecast"
-  | "report"
   | "explain"
-  | "anomaly"
   | "whatif"
+  | "rootcause"
 
 const INTENTS: Intent[] = [
   "query",
   "compare",
   "analyze",
   "forecast",
-  "report",
   "explain",
-  "anomaly",
   "whatif",
+  "rootcause",
 ]
 
 const CLASSIFIER_PROMPT = `You are an intent classifier for a marketplace analytics dashboard.
@@ -29,10 +27,9 @@ Given a user query, classify it into exactly one of these intents:
 - compare: Comparing periods or entities ("How does this week compare to last?", "Which seller performed better?")
 - analyze: Understanding why something happened ("Why did sales drop?", "What caused the spike in refunds?")
 - forecast: Predicting future values ("Predict next month revenue", "What will orders look like next week?")
-- report: Generating a structured report ("Generate monthly report", "Give me the weekly briefing")
 - explain: Explaining a visualization or data point ("Explain this chart", "Why is this metric important?")
-- anomaly: Detecting unusual patterns ("Any anomalies today?", "What's unusual about this week?")
 - whatif: Running hypothetical scenarios ("What if we raise commission to 12%?", "If we reduce fees by 2%")
+- rootcause: Investigating root causes of metric changes ("Investigate why sales dropped", "Why are refunds increasing?")
 
 Respond with ONLY the intent word, nothing else.`
 

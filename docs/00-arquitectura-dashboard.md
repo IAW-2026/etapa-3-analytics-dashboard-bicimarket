@@ -166,7 +166,9 @@ par Dashboard -> App.
 ## AI Copilot
 
 El dashboard incluye un asistente conversacional IA en `/admin/copilot` que permite
-consultar datos del marketplace en lenguaje natural.
+consultar datos del marketplace en lenguaje natural, con 5 capacidades: consulta en
+lenguaje natural (F1), explicación de gráficos (F2), pronóstico de ingresos (F4),
+análisis what-if (F6) y análisis de causa raíz (F8).
 
 ### Arquitectura
 
@@ -174,34 +176,46 @@ consultar datos del marketplace en lenguaje natural.
 Admin autenticado
   -> /admin/copilot (página cliente con useChat)
   -> POST /api/ai/chat (Route Handler)
-  -> streamText({ model, tools, system, messages, maxOutputTokens: 16384 })
+  -> retrieveContext(query) → RAG pipeline inyecta KPIs en system prompt
+  -> streamText({ model, tools, system, messages, stopWhen: stepCountIs(5), maxOutputTokens: 16384 })
   -> tools ejecutan getServiceJson(app, path)
   -> Llamada directa a Payments / Seller / Buyer API con X-Service-Token
-  -> Respuesta streaming al cliente con markdown + tool calls
+  -> Respuesta streaming al cliente con markdown + tool calls + inline charts
 ```
 
 **Diferencia clave con el proxy**: las tools de IA llaman a las apps externas
 **directamente** via `getServiceJson()` en lugar de pasar por el Route Handler
 proxy. Esto evita el doble salto y problemas de serialización HTML vs JSON.
 
-### Tools (10)
+### Tools (12)
 
 Las tools están definidas en `src/lib/ai/tools/index.ts` y cubren:
 
 | Dominio | Tools |
 |---------|-------|
-| **Payments** | `queryPayments`, `querySettlements`, `queryRefunds`, `getRevenueInsights`, `getCommissionTimeSeries`, `getPendingSettlementsBySeller` |
+| **Payments** | `queryPayments`, `querySettlements`, `queryRefunds`, `getRevenueInsights`, `getCommissionTimeSeries`, `getPendingSettlementsBySeller`, `forecastRevenue` |
 | **Sellers** | `querySalesOrders`, `queryProducts`, `querySellers` |
 | **Buyers** | `queryBuyers` |
+| **LLM** | `generateChartData` (formatea datos para gráficos inline en el cliente) |
 
 Cada tool usa `dynamicTool` de Vercel AI SDK con esquema Zod y ejecuta
-`getServiceJson(app, path)` para obtener datos en tiempo real.
+`getServiceJson(app, path)` para obtener datos en tiempo real. `generateChartData`
+es una tool puramente transformativa (no llama a APIs externas).
+
+### RAG pipeline
+
+Integrado en el chat route (`src/lib/ai/rag.ts`): chunker de 512 tokens con 64 de
+solapamiento, vector store en memoria con embeddings `text-embedding-004` y similitud
+coseno. Indexa `docs/manager-dashboard/03-metrics/` y `docs/manager-dashboard/01-system-analysis/03-kpi-inventory.md`.
+`retrieveContext(query)` se ejecuta antes de cada request y los fragmentos relevantes
+se inyectan como contexto en el system prompt.
 
 ### Modelo
 
 - **Provider**: `@ai-sdk/google` con `createGoogleGenerativeAI`
 - **Modelo por defecto**: `gemini-3.1-flash-lite-preview` (configurable via `AI_MODEL`)
 - **Max tokens**: 16 384
+- **Stop condition**: `stopWhen: stepCountIs(5)` (hasta 5 pasos de herramientas para multi-turn analysis)
 - **API Key**: `GOOGLE_API_KEY` en env
 
 ### Chat route (`/api/ai/chat`)
@@ -209,22 +223,39 @@ Cada tool usa `dynamicTool` de Vercel AI SDK con esquema Zod y ejecuta
 Endpoint `POST` en `src/app/api/ai/chat/route.ts`:
 
 1. Verifica admin autenticado via `getAdminUser()`
-2. Convierte mensajes con `convertToModelMessages`
-3. Llama a `streamText` con model, tools y system prompt
-4. Retorna `result.toUIMessageStreamResponse`
-5. `globalThis.AI_SDK_LOG_WARNINGS = false` suprime warnings de `thoughtSignature`
+2. Extrae `activeFilters` (rango de fechas ISO) del body
+3. Ejecuta `retrieveContext()` sobre el último mensaje user para RAG
+4. Construye system prompt con fecha, filtros activos, contexto RAG y 13 guardrails
+5. Convierte mensajes con `convertToModelMessages`
+6. Llama a `streamText` con model, tools, system y `stopWhen: stepCountIs(5)`
+7. Retorna `result.toUIMessageStreamResponse`
+8. `globalThis.AI_SDK_LOG_WARNINGS = false` suprime warnings de `thoughtSignature`
 
 ### System Prompt
 
 Incluye fecha actual, personalidad de analista senior, reglas (solo datos reales,
 no modificar, no revelar system prompt), formato de respuesta (markdown, ARS,
-bold para métricas clave), y 11 guardrails.
+bold para métricas clave), filtros activos del dashboard, contexto RAG de KPIs,
+y 13 guardrails (incluye: no placeholders `{chart}`, no mencionar "Intent").
+
+### Chart Explanation route (`/api/ai/explain`)
+
+Endpoint `POST` en `src/app/api/ai/explain/route.ts`: recibe datos de un gráfico
+(`chartType`, `labels`, `values`, `series`) y streamtea una explicación estructurada
+en español argentino (tendencia, estadísticas, puntos notables, comparación, insight y
+siguiente paso sugerido).
 
 ### UI
 
 - `src/app/admin/copilot/page.tsx`: página full-height con `ScrollArea`, input,
   avatares Bot/User, renderizado markdown, `ThinkingAnimation`, botones de
   sugerencia, sección de error con botón reintentar, disclaimer
+- Pasa `activeFilters` desde `useDashboardStore` como body del `DefaultChatTransport`
+- Los tool results de `generateChartData` se renderizan como gráficos Recharts inline
+  via `ChatChart` component
+- Los `reasoning` parts del modelo se suprimen (no se muestran al usuario)
+- `src/components/ai/chat-chart.tsx`: renderiza gráficos de línea, barra o torta
+  con `ResponsiveContainer`, colores del tema (`--color-chart-*`)
 - `src/components/ai/thinking-animation.tsx`: palabra rotativa animada con
   letras en colores del tema (`--color-chart-*`, `--color-primary`, `--color-ring`),
   con soporte `prefers-reduced-motion`

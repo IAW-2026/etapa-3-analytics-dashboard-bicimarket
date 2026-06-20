@@ -210,26 +210,6 @@ Using historical payment data, the system generates a revenue forecast for the n
 
 ---
 
-## UC10 — "Alert me when something unusual happens"
-
-**Persona**: All users
-**Trigger**: System event
-**Frequency**: Real-time
-
-**Scenario**:
-The dashboard continuously monitors key metrics and generates alerts:
-- **Anomaly**: Payment volume drops > 30% below rolling average for 2+ hours
-- **Threshold**: Pending settlements exceed ARS 1M
-- **Trend**: Refund rate exceeds 10% for 3 consecutive days
-- **Bottleneck**: More than 50 orders pending seller acceptance
-
-**Expected Outcome**: Proactive notification of issues requiring attention.
-
-**Data Required**:
-- All API endpoints (polling-based monitoring)
-
----
-
 ## UC11 — "Explain this chart"
 
 **Persona**: All users
@@ -272,70 +252,4 @@ An executive wants to model the impact of increasing marketplace commission from
 
 > **ASSUMPTION**: This is a simulation — no actual data changes. Seller churn sensitivity is an assumption.
 
----
 
-## UC13 — "Show me customer segments"
-
-**Persona**: Marketing Manager
-**Trigger**: Campaign planning
-**Frequency**: Monthly
-
-**Scenario**:
-A marketing manager runs customer segmentation based on available data:
-- **High value**: Multiple purchases, high order value
-- **At risk**: Had refunds or failed deliveries
-- **New**: First purchase within 30 days
-- **One-time**: Single purchase, no repeat
-
-**Expected Outcome**: Segmented customer understanding for targeted campaigns.
-
-**Data Required**:
-- Payment history grouped by buyer_profile_id
-- Refund history per buyer
-
-> **ASSUMPTION**: No buyer-level aggregation endpoint is documented. Requires Buyer App to expose per-buyer order history.
-
----
-
-## UC14 — "Automated weekly report to my team"
-
-**Persona**: Executive
-**Trigger**: End of week
-**Frequency**: Weekly
-
-**Scenario**:
-Every Monday, the dashboard automatically generates and sends a PDF report to the management team containing:
-- Last week's KPIs vs. previous week
-- Top 3 highlights
-- Top 3 concerns
-- Recommended actions
-- Forecast for upcoming week
-
-**Expected Outcome**: Consistent weekly reporting without manual effort.
-
-**Data Required**:
-- All core API endpoints
-- PDF generation service
-- Email delivery (or in-app notification)
-
----
-
-## UC15 — "Meeting mode — prep for the board meeting"
-
-**Persona**: Executive
-**Trigger**: Board meeting preparation
-**Frequency**: Monthly/Quarterly
-
-**Scenario**:
-Before a board meeting, the executive activates "Meeting Mode." The system generates:
-- Key talking points with data support
-- Comparison vs. targets
-- Year-over-year growth metrics
-- Strategic recommendations
-- Risk areas requiring board attention
-- Print-friendly/PDF export
-
-**Expected Outcome**: Ready-to-present executive summary for board meetings.
-
-**Data Required**:
-- All API endpoints + period-over-period comparison

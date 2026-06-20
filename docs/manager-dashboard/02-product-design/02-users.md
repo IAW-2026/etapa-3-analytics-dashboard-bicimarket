@@ -105,7 +105,7 @@ The Manager Dashboard reuses the existing Clerk authentication model. No new rol
 | **Morning briefing** | First login of the day — AI-generated summary of overnight activity |
 | **Ad-hoc query** | User asks a specific question — "How was revenue last week?" |
 | **Periodic review** | Weekly/monthly deep-dive into specific metrics |
-| **Alert-driven** | Anomaly notification pulls user into dashboard |
+| **Alert-driven** | Significant metric change pulls user into dashboard |
 | **Report generation** | Scheduled or on-demand PDF report creation |
 
 ---

@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useRef, useState, useMemo } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from "ai"
 import { Bot, Send, Sparkles, Square, User, AlertCircle, RefreshCw } from "lucide-react"
@@ -12,12 +12,15 @@ import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { cn } from "@/lib/utils"
 import { ThinkingAnimation } from "@/components/ai/thinking-animation"
+import { ChatChart, isChartData } from "@/components/ai/chat-chart"
+import { useDashboardStore } from "@/lib/dashboard-store"
 
 const suggestions = [
-  "¿Cómo fueron los ingresos esta semana?",
-  "¿Qué vendedor rindió mejor?",
-  "Mostrame las liquidaciones pendientes",
-  "¿Por qué bajaron las ventas ayer?",
+  "¿Cuál es nuestra proyección de ingresos para el próximo trimestre?",
+  "¿Qué vendedores concentran más ingresos y cómo evolucionan?",
+  "¿Conviene subir la comisión general? Simulá escenarios del 12%, 15% y 18%",
+  "¿Por qué cayeron las ventas ayer vs. la semana pasada?",
+  "¿Cuánto tenemos en liquidaciones pendientes por vendedor?",
 ]
 
 export default function AICopilotPage() {
@@ -25,8 +28,15 @@ export default function AICopilotPage() {
   const inputRef = useRef<HTMLInputElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  const from = useDashboardStore((s) => s.from)
+  const to = useDashboardStore((s) => s.to)
+  const activeFilters = useMemo(
+    () => ({ from: from.toISOString(), to: to.toISOString() }),
+    [from, to],
+  )
+
   const { messages, status, error, sendMessage, stop, regenerate, clearError } = useChat({
-    transport: new DefaultChatTransport({ api: "/api/ai/chat" }),
+    transport: new DefaultChatTransport({ api: "/api/ai/chat", body: { activeFilters } }),
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
   })
 
@@ -90,7 +100,7 @@ export default function AICopilotPage() {
             <div className="space-y-4">
               {messages.filter((msg) => {
                 if (msg.role === "user") return true
-                return msg.parts.some((p) => p.type === "text" || p.type === "reasoning")
+                return msg.parts.some((p) => p.type === "text" || p.type === "reasoning" || p.type === "tool-result")
               }).map((msg) => (
                 <div
                   key={msg.id}
@@ -123,12 +133,16 @@ export default function AICopilotPage() {
                             </div>
                           )
                         case "reasoning":
-                          return (
-                            <span key={i} className="block text-xs text-muted-foreground italic">
-                              {part.text}
-                            </span>
-                          )
+                          return null
                         default:
+                          if (
+                            (part.type === "dynamic-tool" || part.type.startsWith("tool-")) &&
+                            "state" in part &&
+                            part.state === "output-available" &&
+                            isChartData(part.output)
+                          ) {
+                            return <ChatChart key={i} data={part.output} />
+                          }
                           return null
                       }
                     })}

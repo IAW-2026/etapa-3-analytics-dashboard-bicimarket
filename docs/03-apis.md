@@ -105,29 +105,31 @@ y agrupa localmente por día de la semana usando `parseDashboardDate()`.
 - **Cliente analytics**: `src/lib/api/payments.ts`. **14 funciones** que llaman al proxy, con `proxyFetch` y `proxyFetchData` para manejar el envelope.
 - **Trends period-over-period**: `src/lib/trends.ts` con `getPrevFilters()` y `computeTrend()`. **10 hooks prev-period** en `use-dashboard-data.ts`.
 
-## AI Copilot — Chat y tools
+## AI Copilot — Chat, tools y endpoints
 
-El dashboard expone un endpoint de chat IA en `/api/ai/chat` (`POST`) que recibe un array de mensajes
-y responde en streaming usando Vercel AI SDK `streamText` + `DefaultChatTransport`.
+El dashboard expone un endpoint de chat IA en `/api/ai/chat` (`POST`) y un endpoint de
+explicación de gráficos en `/api/ai/explain` (`POST`). Ambos responden en streaming
+usando Vercel AI SDK `streamText`.
 
 ### Arquitectura
 
 ```text
 Admin autenticado
   -> /admin/copilot (página cliente)
-  -> useChat({ transport: DefaultChatTransport, api: "/api/ai/chat" })
+  -> useChat({ transport: DefaultChatTransport({ api: "/api/ai/chat", body: { activeFilters } }) })
   -> POST /api/ai/chat (Route Handler)
   -> getModel("gemini-3.1-flash-lite-preview") via @ai-sdk/google
-  -> streamText({ model, tools, system, messages, maxOutputTokens: 16384 })
+  -> retrieveContext(query) + formatRagContext() → inyecta KPIs en system prompt
+  -> streamText({ model, tools, system, messages, stopWhen: stepCountIs(5), maxOutputTokens: 16384 })
   -> tools ejecutan getServiceJson(app, path) → llamada directa a la API externa
-  -> Respuesta streaming al cliente
+  -> Respuesta streaming al cliente con markdown + tool calls + inline charts
 ```
 
 A diferencia de los hooks de dashboard (que pasan por el proxy `/api/internal/analytics/…`),
 las tools de IA llaman a las apps externas **directamente** via `getServiceJson()`.
 Esto evita el doble salto del proxy y problemas de serialización HTML vs JSON.
 
-### Tools de IA
+### Tools de IA (12)
 
 | Tool | App destino | Endpoint upstream | Descripción |
 |------|-------------|-------------------|-------------|
@@ -141,6 +143,20 @@ Esto evita el doble salto del proxy y problemas de serialización HTML vs JSON.
 | `queryProducts` | seller | `GET /api/v1/products/metrics` | Métricas de productos |
 | `querySellers` | seller | `GET /api/v1/sellers/metrics` | Métricas de vendedores |
 | `queryBuyers` | buyer | `GET /api/v1/admin/buyers/metrics` | Métricas de compradores |
+| `forecastRevenue` | payments | `GET /api/v1/payments/revenue/timeseries` | Serie temporal de ingresos para pronóstico |
+| `generateChartData` | — (LLM) | — | Formatea datos estructurados para renderizar gráficos inline en el cliente |
+
+Las tools están definidas en `src/lib/ai/tools/index.ts` usando `dynamicTool` de Vercel AI SDK.
+
+### RAG pipeline
+
+Integrado en el chat route: `retrieveContext(query)` busca fragmentos relevantes en
+`docs/manager-dashboard/03-metrics/` y `docs/manager-dashboard/01-system-analysis/03-kpi-inventory.md`
+usando embeddings `text-embedding-004`. Los resultados se inyectan en el system prompt como contexto
+de definiciones de KPIs y fórmulas de métricas.
+
+Implementación en `src/lib/ai/rag.ts`: chunker de 512 tokens con 64 de solapamiento,
+vector store en memoria con similitud coseno.
 
 ### System Prompt
 
@@ -151,22 +167,41 @@ El system prompt del asistente incluye:
 - Formato de moneda: ARS en centavos (dividir /100 para mostrar)
 - Mostrar nombres (no IDs) para sellers, products, buyers, carriers; mostrar IDs para payments, settlements, refunds, orders
 - Respuestas en español argentino, <200 palabras, markdown con tablas y negritas
-- 11 guardrails (no fabricar datos, no PII, solo responder datos del marketplace)
+- Filtros activos del dashboard (rango de fechas) inyectados dinámicamente
+- Contexto RAG (definiciones de KPIs) inyectado dinámicamente
+- 13 guardrails (incluye: no placeholders `{chart}`, no mencionar "Intent")
 
 ### Configuración
 
 - **Modelo**: `gemini-3.1-flash-lite-preview` (configurable via `AI_MODEL`)
 - **Max tokens**: 16 384 (`maxOutputTokens: 16384`)
+- **Stop condition**: `stopWhen: stepCountIs(5)` (hasta 5 pasos de herramientas, reemplaza `maxSteps`)
 - **API Key**: `GOOGLE_API_KEY` en env
 - **Log warnings**: `globalThis.AI_SDK_LOG_WARNINGS = false` (suprime warnings de `thoughtSignature`)
+
+### Endpoint de explicación de gráficos
+
+`POST /api/ai/explain` en `src/app/api/ai/explain/route.ts`:
+
+- Recibe `{ chartType, labels, values, series }` con los datos del gráfico
+- Streamtea una explicación estructurada: tendencia, estadísticas, puntos notables, comparación, insight
+- Usa un system prompt dedicado en español argentino
+- Retorna `result.toUIMessageStreamResponse()`
 
 ### UI
 
 La página del copilot vive en `src/app/admin/copilot/page.tsx`:
 
-- `useChat` con `DefaultChatTransport` y auto-envío tras tool calls completas
+- `useChat` con `DefaultChatTransport` (body incluye `activeFilters` desde `useDashboardStore`)
+- Auto-envío tras tool calls completas via `lastAssistantMessageIsCompleteWithToolCalls`
 - `ThinkingAnimation` con letras con animación bounce en colores del tema, palabras rotativas
 - Renderizado markdown con `react-markdown` + `remark-gfm`
+- Gráficos inline: cuando el LLM llama `generateChartData`, el tool result con `type: "chart"` se renderiza como gráfico Recharts (línea, barra o torta) via `ChatChart` component
+- Los `reasoning` parts no se muestran al usuario (suprimidos en el render)
 - Botones de sugerencia: ingresos semanales, mejor vendedor, liquidaciones pendientes, bajas de ventas
 - Disclaimer: "Copilot IA usa Gemini 3.1 Flash Lite. Los datos se consultan en tiempo real."
 - `SectionHeader` con `hideFilter` (oculta el selector de fechas del dashboard)
+
+Componentes:
+- `src/components/ai/chat-chart.tsx`: `ChatChart` con Recharts (`ResponsiveContainer`, `LineChart`, `BarChart`, `PieChart`) + `isChartData` type guard
+- `src/components/ai/thinking-animation.tsx`: animación de letras rotativas con colores del tema
