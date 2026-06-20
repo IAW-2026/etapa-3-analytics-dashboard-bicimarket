@@ -2,11 +2,6 @@ import type { FilterState, TimeSeriesPoint, PaginatedResponse, Payment, Settleme
 
 const BASE = "/api/internal/analytics/payments"
 
-function internalOrigin(): string {
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
-  return `http://localhost:${process.env.PORT || 3000}`
-}
-
 async function proxyFetch<T>(slug: string, params?: Record<string, string | number | undefined>): Promise<T> {
   const searchParams = new URLSearchParams()
   if (params) {
@@ -17,8 +12,7 @@ async function proxyFetch<T>(slug: string, params?: Record<string, string | numb
     }
   }
   const qs = searchParams.toString()
-  const path = qs ? `${BASE}/${slug}?${qs}` : `${BASE}/${slug}`
-  const url = `${internalOrigin()}${path}`
+  const url = qs ? `${BASE}/${slug}?${qs}` : `${BASE}/${slug}`
   const res = await fetch(url)
   if (!res.ok) {
     const body = await res.json().catch(() => null)
