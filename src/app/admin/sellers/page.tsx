@@ -181,7 +181,7 @@ export default function SellerAnalyticsPage() {
           </SheetHeader>
 
           {selectedProfile && (
-            <div className="mt-6 space-y-6">
+            <div className="mt-6 space-y-6 px-6">
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-lg border bg-muted/40 p-4">
                   <p className="text-xs text-muted-foreground">Productos activos</p>
