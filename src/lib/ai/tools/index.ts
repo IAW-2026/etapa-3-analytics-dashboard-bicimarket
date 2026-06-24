@@ -150,7 +150,9 @@ export const dashboardTools = {
     }),
     execute: async (args: unknown) => {
       const { from, to } = args as { from?: string; to?: string }
-      return getServiceJson("buyer", `/api/v1/admin/buyers/metrics${toParams(from, to)}`)
+      const base = toParams(from, to)
+      const sep = base ? "&" : "?"
+      return getServiceJson("buyer", `/api/v1/admin/buyers/metrics${base}${sep}inactive_days=60`)
     },
   }),
 

@@ -267,7 +267,7 @@ export default function CustomerAnalyticsPage() {
               {buyerMetrics.data?.at_risk_count ?? "—"}
             </p>
             <p className="max-w-xs text-sm text-muted-foreground">
-              Compradores con historial de compras pero sin actividad en los últimos 90 días
+              Compradores con historial de compras pero sin actividad en los últimos 60 días
             </p>
           </div>
         </ChartContainer>

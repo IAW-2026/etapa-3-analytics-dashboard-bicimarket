@@ -35,7 +35,7 @@ export async function getBuyerMetrics(filters?: Partial<FilterState>) {
     new_this_period: number
     repeat_rate: number
     at_risk_count: number
-  }>("admin/buyers/metrics", dateParams(filters))
+  }>("admin/buyers/metrics", { ...dateParams(filters), inactive_days: 60 })
 }
 
 export async function getBuyers(filters?: Partial<FilterState> & { page?: number; limit?: number }) {
