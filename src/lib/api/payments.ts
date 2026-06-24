@@ -48,7 +48,8 @@ export async function getPaymentMetrics(filters?: Partial<FilterState>) {
 }
 
 export async function getRevenueTimeSeries(filters?: Partial<FilterState>): Promise<TimeSeriesPoint[]> {
-  return proxyFetchData<TimeSeriesPoint[]>("payments/revenue/timeseries", dateParams(filters))
+  const data = await proxyFetchData<TimeSeriesPoint[]>("payments/revenue/timeseries", dateParams(filters))
+  return (data ?? []).sort((a, b) => a.date.localeCompare(b.date))
 }
 
 function parseDashboardDate(dateStr: string): Date {
