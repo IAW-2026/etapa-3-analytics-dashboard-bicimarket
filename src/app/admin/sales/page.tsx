@@ -196,8 +196,10 @@ export default function SalesAnalyticsPage() {
         </ChartContainer>
 
         <ChartContainer title="Ingresos por Día de la Semana" isLoading={dayOfWeek.isLoading} error={dayOfWeek.error?.message} isEmpty={dayOfWeek.data?.length === 0} dataSources={["payments"]}>
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={dayOfWeek.data}>
+          <div className="flex flex-col h-full min-h-[240px]">
+            <div className="flex-1 min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dayOfWeek.data} margin={{ top: 12, bottom: 12 }}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis dataKey="day" tick={{ fontSize: 11 }} className="text-muted-foreground" />
               <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatCompactARS(v)} className="text-muted-foreground" />
@@ -205,6 +207,8 @@ export default function SalesAnalyticsPage() {
               <Bar dataKey="value" fill="var(--color-chart-2)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          </div>
+          </div>
         </ChartContainer>
       </div>
     </div>

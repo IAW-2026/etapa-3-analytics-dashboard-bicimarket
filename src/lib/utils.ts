@@ -24,7 +24,7 @@ export function formatDateLabel(dateStr: string): string {
   return d.toLocaleDateString("es-AR", { day: "2-digit", month: "short" })
 }
 
-function parseDashboardDate(dateStr: string): Date {
+export function parseDashboardDate(dateStr: string): Date {
   const d = new Date(dateStr)
   if (!isNaN(d.getTime())) return d
   const trimmed = dateStr.replace(/\s+(GM|GMT)[\s\S]*$/, "")

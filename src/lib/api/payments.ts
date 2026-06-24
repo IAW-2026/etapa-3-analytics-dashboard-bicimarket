@@ -1,3 +1,4 @@
+import { parseDashboardDate } from "@/lib/utils"
 import type { FilterState, TimeSeriesPoint, PaginatedResponse, Payment, Settlement, Payout } from "@/lib/types"
 
 const BASE = "/api/internal/analytics/payments"
@@ -49,18 +50,13 @@ export async function getPaymentMetrics(filters?: Partial<FilterState>) {
 
 export async function getRevenueTimeSeries(filters?: Partial<FilterState>): Promise<TimeSeriesPoint[]> {
   const data = await proxyFetchData<TimeSeriesPoint[]>("payments/revenue/timeseries", dateParams(filters))
-  return (data ?? []).sort((a, b) => a.date.localeCompare(b.date))
-}
-
-function parseDashboardDate(dateStr: string): Date {
-  const d = new Date(dateStr)
-  if (!isNaN(d.getTime())) return d
-  const trimmed = dateStr.replace(/\s+(GM|GMT)[\s\S]*$/, "")
-  if (trimmed !== dateStr) {
-    const d2 = new Date(trimmed)
-    if (!isNaN(d2.getTime())) return d2
-  }
-  return d
+  const now = new Date()
+  return (data ?? [])
+    .filter((point) => {
+      const d = parseDashboardDate(point.date)
+      return !isNaN(d.getTime()) && d <= now
+    })
+    .sort((a, b) => parseDashboardDate(a.date).getTime() - parseDashboardDate(b.date).getTime())
 }
 
 export async function getRevenueByDayOfWeek(filters?: Partial<FilterState>) {

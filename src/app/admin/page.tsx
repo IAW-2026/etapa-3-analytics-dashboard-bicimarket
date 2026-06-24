@@ -95,7 +95,7 @@ export default function ExecutiveOverviewPage() {
             dataSources={["payments"]}
           >
             <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={revenueData}>
+              <AreaChart data={revenueData} margin={{ top: 12 }}>
                 <defs>
                   <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3} />
@@ -164,11 +164,13 @@ export default function ExecutiveOverviewPage() {
           isEmpty={dayOfWeek.data?.length === 0}
           dataSources={["payments"]}
         >
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={dayOfWeek.data}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis dataKey="day" tick={{ fontSize: 11 }} className="text-muted-foreground" />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatCompactARS(v)} className="text-muted-foreground" />
+          <div className="flex flex-col h-full min-h-[240px]">
+            <div className="flex-1 min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dayOfWeek.data} margin={{ top: 12, bottom: 12 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis dataKey="day" tick={{ fontSize: 11 }} className="text-muted-foreground" />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatCompactARS(v)} className="text-muted-foreground" />
               <Tooltip
                 contentStyle={{ borderRadius: "8px", fontSize: "13px" }}
                 formatter={(value) => [formatARS(Number(value ?? 0)), "Ingresos"]}
@@ -176,6 +178,8 @@ export default function ExecutiveOverviewPage() {
               <Bar dataKey="value" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
+            </div>
+          </div>
         </ChartContainer>
       </div>
     </div>
