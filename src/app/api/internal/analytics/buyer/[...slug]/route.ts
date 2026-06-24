@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { getAdminUser } from "@/lib/auth"
 
 const ALLOWED_PATHS = new Set([
   "admin/buyers",
@@ -16,6 +17,13 @@ export async function GET(
     return NextResponse.json(
       { error: { code: "FORBIDDEN_PATH", message: `Path not allowed: ${path}` } },
       { status: 403 },
+    )
+  }
+
+  if (!(await getAdminUser())) {
+    return NextResponse.json(
+      { error: { code: "UNAUTHORIZED", message: "Solo administradores" } },
+      { status: 401 },
     )
   }
 
