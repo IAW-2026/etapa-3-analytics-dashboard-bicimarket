@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts"
 import { KpiCard } from "@/components/analytics/kpi-card"
+import { ExecutiveHealthCard } from "@/components/analytics/executive-health-card"
 import { ChartContainer } from "@/components/analytics/chart-container"
 import { SectionHeader } from "@/components/analytics/section-header"
 import { StatusBadge } from "@/components/analytics/status-badge"
@@ -11,6 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { useRevenueBySeller, useSettlementMetrics, useSellerMetrics, usePendingSettlementsBySeller, usePrevSettlementMetrics, usePrevSellerMetrics, usePrevRevenueBySeller, useSellers } from "@/hooks/use-dashboard-data"
 import { computeTrend } from "@/lib/trends"
 import { translateStatus } from "@/lib/labels"
+import { calculateHealth, inversePercentage, percentage } from "@/lib/health-score"
 
 const COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "var(--color-chart-5)"]
 
@@ -42,6 +44,13 @@ export default function SellerAnalyticsPage() {
   const activeSellersTrend = computeTrend(pselm?.verified_count, selm?.verified_count)
   const pendingLiqTrend = computeTrend(psm?.pending_cents, sm?.pending_cents)
   const avgRevenueTrend = computeTrend(prevAvgRevenue, avgRevenue)
+  const verificationRate = percentage(selm?.verified_count, selm?.total)
+  const goodStandingRate = inversePercentage(selm?.suspended_count, selm?.total)
+  const sellerHealth = calculateHealth([
+    { value: verificationRate, weight: 70, critical: true },
+    { value: goodStandingRate, weight: 30 },
+  ])
+  const sellersNeedAction = sellerHealth && ["urgent", "alert", "attention"].includes(sellerHealth.status)
 
   const sellerList = sellers.data?.data ?? []
   const selectedProfile = selectedSeller ? sellerList.find((s) => s.id === selectedSeller) : null
@@ -59,15 +68,30 @@ export default function SellerAnalyticsPage() {
     <div className="mx-auto max-w-7xl space-y-6">
       <SectionHeader title="Analítica de Vendedores" description="Rendimiento, ranking y estado de verificación de vendedores" />
 
+      <ExecutiveHealthCard
+        section="Vendedores"
+        result={sellerHealth}
+        sources={["seller"]}
+        isLoading={sellerMetrics.isLoading}
+        error={sellerMetrics.error?.message}
+        summary={selm ? `${selm.verified_count.toLocaleString("es-AR")} de ${selm.total.toLocaleString("es-AR")} vendedores están verificados y ${selm.suspended_count.toLocaleString("es-AR")} suspendidos.` : "Sin información suficiente para evaluar la red de vendedores."}
+        recommendation={sellersNeedAction ? "Acelerar verificaciones pendientes y resolver las causas de suspensión de vendedores." : "Sostener el estándar de verificación y acompañar el crecimiento de los vendedores activos."}
+        metrics={[
+          { label: "Tasa de verificación", value: verificationRate != null ? `${verificationRate.toFixed(1)}%` : "—" },
+          { label: "En buen estado", value: goodStandingRate != null ? `${goodStandingRate.toFixed(1)}%` : "—" },
+          { label: "Productos publicados", value: selm?.product_count_total.toLocaleString("es-AR") ?? "—" },
+        ]}
+      />
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Vendedores Activos" value={selm ? String(selm.verified_count) : "—"} trend={activeSellersTrend ? { value: activeSellersTrend.label, direction: activeSellersTrend.direction } : undefined} isLoading={sellerMetrics.isLoading} />
-        <KpiCard label="Liquidaciones Pendientes" value={sm ? formatARS(sm.pending_cents) : "—"} trend={pendingLiqTrend ? { value: pendingLiqTrend.label, direction: pendingLiqTrend.direction, positive: false } : undefined} isLoading={settlementMetrics.isLoading} />
-        <KpiCard label="Ingreso Promedio" value={formatARS(avgRevenue)} trend={avgRevenueTrend ? { value: avgRevenueTrend.label, direction: avgRevenueTrend.direction } : undefined} isLoading={topSellers.isLoading} />
-        <KpiCard label="Mejor Vendedor" value={sellerData[0]?.seller_name ?? "—"} isLoading={topSellers.isLoading} />
+        <KpiCard label="Vendedores Activos" value={selm ? String(selm.verified_count) : "—"} trend={activeSellersTrend ? { value: activeSellersTrend.label, direction: activeSellersTrend.direction } : undefined} isLoading={sellerMetrics.isLoading} dataSources={["seller"]} />
+        <KpiCard label="Liquidaciones Pendientes" value={sm ? formatARS(sm.pending_cents) : "—"} trend={pendingLiqTrend ? { value: pendingLiqTrend.label, direction: pendingLiqTrend.direction, positive: false } : undefined} isLoading={settlementMetrics.isLoading} dataSources={["payments"]} />
+        <KpiCard label="Ingreso Promedio" value={formatARS(avgRevenue)} trend={avgRevenueTrend ? { value: avgRevenueTrend.label, direction: avgRevenueTrend.direction } : undefined} isLoading={topSellers.isLoading} dataSources={["payments", "seller"]} />
+        <KpiCard label="Mejor Vendedor" value={sellerData[0]?.seller_name ?? "—"} isLoading={topSellers.isLoading} dataSources={["payments", "seller"]} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <ChartContainer title="Ranking de Vendedores (por Ingresos)" isLoading={topSellers.isLoading} error={topSellers.error?.message} isEmpty={sellerData.length === 0}>
+        <ChartContainer title="Ranking de Vendedores (por Ingresos)" isLoading={topSellers.isLoading} error={topSellers.error?.message} isEmpty={sellerData.length === 0} dataSources={["payments", "seller"]}>
           <Table>
             <TableHeader>
               <TableRow>
@@ -91,7 +115,7 @@ export default function SellerAnalyticsPage() {
         </ChartContainer>
 
         <div className="grid gap-6">
-          <ChartContainer title="Estado de Verificación" isLoading={sellerMetrics.isLoading} error={sellerMetrics.error?.message} isEmpty={verificationData.length === 0}>
+          <ChartContainer title="Estado de Verificación" isLoading={sellerMetrics.isLoading} error={sellerMetrics.error?.message} isEmpty={verificationData.length === 0} dataSources={["seller"]}>
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie data={verificationData} cx="50%" cy="50%" innerRadius={45} outerRadius={80} dataKey="count" nameKey="status" label={({ name, value }) => `${translateStatus(name)}: ${value}`}>
@@ -102,7 +126,7 @@ export default function SellerAnalyticsPage() {
             </ResponsiveContainer>
           </ChartContainer>
 
-          <ChartContainer title="Productos por Vendedor" isLoading={sellers.isLoading} isEmpty={sellerList.length === 0}>
+          <ChartContainer title="Productos por Vendedor" isLoading={sellers.isLoading} isEmpty={sellerList.length === 0} dataSources={["seller"]}>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={sellerList.map((s) => ({ name: s.display_name, count: s.product_count }))} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -116,7 +140,7 @@ export default function SellerAnalyticsPage() {
         </div>
       </div>
 
-      <ChartContainer title="Liquidaciones Pendientes por Vendedor" isLoading={pendingSettlements.isLoading} error={pendingSettlements.error?.message} isEmpty={(pendingSettlements.data?.length ?? 0) === 0}>
+      <ChartContainer title="Liquidaciones Pendientes por Vendedor" isLoading={pendingSettlements.isLoading} error={pendingSettlements.error?.message} isEmpty={(pendingSettlements.data?.length ?? 0) === 0} dataSources={["payments", "seller"]}>
         <Table>
           <TableHeader>
             <TableRow>

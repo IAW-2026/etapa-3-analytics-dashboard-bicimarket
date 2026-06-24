@@ -59,24 +59,28 @@ export default function ExecutiveOverviewPage() {
           value={formatARS(totalRevenue)}
           trend={gmvTrend ? { value: gmvTrend.label, direction: gmvTrend.direction } : undefined}
           isLoading={metrics.isLoading}
+          dataSources={["payments"]}
         />
         <KpiCard
           label="Órdenes"
           value={paymentMetrics?.count != null ? paymentMetrics.count.toLocaleString("es-AR") : "—"}
           trend={ordersTrend ? { value: ordersTrend.label, direction: ordersTrend.direction } : undefined}
           isLoading={metrics.isLoading}
+          dataSources={["payments"]}
         />
         <KpiCard
           label="Tasa de Éxito"
           value={paymentMetrics?.success_rate != null ? `${paymentMetrics.success_rate.toFixed(1)}%` : "—"}
           trend={successRateTrend ? { value: successRateTrend.label, direction: successRateTrend.direction } : undefined}
           isLoading={metrics.isLoading}
+          dataSources={["payments"]}
         />
         <KpiCard
           label="Liquidaciones Pendientes"
           value={settlementMetrics.data ? formatARS(settlementMetrics.data.pending_cents) : "—"}
           trend={pendingLiqTrend ? { value: pendingLiqTrend.label, direction: pendingLiqTrend.direction, positive: false } : undefined}
           isLoading={settlementMetrics.isLoading}
+          dataSources={["payments"]}
         />
       </div>
 
@@ -87,6 +91,7 @@ export default function ExecutiveOverviewPage() {
             isLoading={revenue.isLoading}
             error={revenue.error?.message}
             isEmpty={revenueData.length === 0}
+            dataSources={["payments"]}
           >
             <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={revenueData}>
@@ -113,6 +118,7 @@ export default function ExecutiveOverviewPage() {
           <ChartContainer
             title="Resumen"
             isLoading={false}
+            dataSources={["payments", "seller"]}
           >
             <div className="space-y-3 text-sm">
               <p className="text-muted-foreground">
@@ -132,6 +138,7 @@ export default function ExecutiveOverviewPage() {
             isLoading={topSellers.isLoading}
             error={topSellers.error?.message}
             isEmpty={topSellerList.length === 0}
+            dataSources={["payments", "seller"]}
           >
             <div className="space-y-2">
               {topSellerList.map((seller, idx) => (
@@ -147,13 +154,14 @@ export default function ExecutiveOverviewPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <AttentionItems items={attentionItems} />
+        <AttentionItems items={attentionItems} dataSources={["payments"]} />
 
         <ChartContainer
           title="Ingresos por Día de la Semana"
           isLoading={dayOfWeek.isLoading}
           error={dayOfWeek.error?.message}
           isEmpty={dayOfWeek.data?.length === 0}
+          dataSources={["payments"]}
         >
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={dayOfWeek.data}>

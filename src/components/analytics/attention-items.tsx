@@ -1,10 +1,12 @@
 "use client"
 
 import { AlertTriangle, Ban, Info } from "lucide-react"
+import { DataSourceInfo, type DataSource } from "@/components/analytics/data-source-info"
 import type { AttentionItem } from "@/lib/mock/types"
 
 interface AttentionItemsProps {
   items: AttentionItem[]
+  dataSources?: DataSource[]
 }
 
 const severityConfig = {
@@ -13,28 +15,34 @@ const severityConfig = {
   info: { icon: Info, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-950/20", border: "border-blue-200 dark:border-blue-900" },
 }
 
-export function AttentionItems({ items }: AttentionItemsProps) {
+function Title({ dataSources }: { dataSources?: DataSource[] }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <h3 className="text-sm font-medium">Atención requerida</h3>
+      {dataSources?.length ? <DataSourceInfo sources={dataSources} /> : null}
+    </div>
+  )
+}
+
+export function AttentionItems({ items, dataSources }: AttentionItemsProps) {
   if (items.length === 0) {
     return (
       <div className="rounded-lg border p-4">
-        <h3 className="mb-2 text-sm font-medium">Atención Requerida</h3>
-        <p className="text-sm text-muted-foreground">No hay elementos que requieran atención.</p>
+        <Title dataSources={dataSources} />
+        <p className="mt-2 text-sm text-muted-foreground">No hay elementos que requieran atención.</p>
       </div>
     )
   }
 
   return (
     <div className="rounded-lg border p-4">
-      <h3 className="mb-3 text-sm font-medium">Atención Requerida</h3>
-      <div className="space-y-2">
+      <Title dataSources={dataSources} />
+      <div className="mt-3 space-y-2">
         {items.map((item) => {
           const config = severityConfig[item.severity]
           const Icon = config.icon
           return (
-            <div
-              key={item.id}
-              className={`flex items-start gap-3 rounded-md border p-3 ${config.bg} ${config.border}`}
-            >
+            <div key={item.id} className={`flex items-start gap-3 rounded-md border p-3 ${config.bg} ${config.border}`}>
               <Icon className={`mt-0.5 size-4 shrink-0 ${config.color}`} />
               <div className="min-w-0">
                 <p className="text-sm font-medium">{item.title}</p>

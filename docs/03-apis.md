@@ -16,6 +16,10 @@
 El dashboard administrativo expone un Route Handler catch-all para proxear requests a la Payments API.
 El proxy vive en `src/app/api/internal/analytics/payments/[...slug]/route.ts` y tiene **13 paths permitidos**.
 
+Shipping usa un proxy equivalente en `src/app/api/internal/analytics/shipping/[...slug]/route.ts`,
+con los paths permitidos `shipments` y `shipments/metrics`. Inyecta
+`DASHBOARD_TO_SHIPPING_SERVICE_TOKEN` y usa `SHIPPING_API_URL` como upstream.
+
 ### Proxy — ALLOWED_PATHS
 
 | Proxy Route (`GET /api/internal/analytics/payments/…`) | Upstream (`GET /api/v1/…`) | Usado por |

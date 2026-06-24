@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TrendingUp, TrendingDown, Minus } from "lucide-react"
+import { DataSourceInfo, type DataSource } from "@/components/analytics/data-source-info"
 
 interface KpiCardProps {
   label: string
@@ -14,9 +15,10 @@ interface KpiCardProps {
   }
   icon?: React.ReactNode
   isLoading?: boolean
+  dataSources?: DataSource[]
 }
 
-export function KpiCard({ label, value, trend, icon, isLoading }: KpiCardProps) {
+export function KpiCard({ label, value, trend, icon, isLoading, dataSources }: KpiCardProps) {
   if (isLoading) {
     return (
       <Card className="shadow-xs transition-shadow hover:shadow-md">
@@ -34,7 +36,10 @@ export function KpiCard({ label, value, trend, icon, isLoading }: KpiCardProps) 
   return (
     <Card className="shadow-xs transition-shadow hover:shadow-md">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <p className="text-sm font-medium text-muted-foreground">{label}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+          {dataSources?.length ? <DataSourceInfo sources={dataSources} /> : null}
+        </div>
         {icon && <span className="text-muted-foreground">{icon}</span>}
       </CardHeader>
       <CardContent>

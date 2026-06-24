@@ -7,6 +7,7 @@ import { getPrevFilters } from "@/lib/trends"
 import * as paymentsApi from "@/lib/api/payments"
 import * as buyerApi from "@/lib/api/buyer"
 import * as sellerApi from "@/lib/api/seller"
+import * as shippingApi from "@/lib/api/shipping"
 
 function getFilters() {
   const s = useDashboardStore.getState()
@@ -265,10 +266,7 @@ export function usePrevShipmentMetrics() {
   const dateKey = useDateFilterKey()
   return useQuery({
     queryKey: ["prevShipmentMetrics", ...dateKey],
-    queryFn: async () => {
-      const { getShipmentMetrics } = await import("@/lib/mock/shipments")
-      return getShipmentMetrics(getPrevFilters(getFilters()))
-    },
+    queryFn: () => shippingApi.getShipmentMetrics(getPrevFilters(getFilters())),
   })
 }
 
@@ -310,16 +308,22 @@ export function usePrevRevenueBySeller() {
   })
 }
 
-// ── Mocks (no real API yet) ─────────────────────────────────
+// ── Shipping App ─────────────────────────────────────────────
 
 export function useShipmentMetrics() {
   const dateKey = useDateFilterKey()
   return useQuery({
     queryKey: ["shipmentMetrics", ...dateKey],
-    queryFn: async () => {
-      const { getShipmentMetrics } = await import("@/lib/mock/shipments")
-      return getShipmentMetrics(getFilters())
-    },
+    queryFn: () => shippingApi.getShipmentMetrics(getFilters()),
+    refetchInterval: 60_000,
+  })
+}
+
+export function useShipments({ limit = 100 }: { limit?: number } = {}) {
+  const dateKey = useDateFilterKey()
+  return useQuery({
+    queryKey: ["shipments", ...dateKey, limit],
+    queryFn: () => shippingApi.getShipments({ ...getFilters(), limit }),
     refetchInterval: 60_000,
   })
 }

@@ -2,6 +2,7 @@
 
 import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts"
 import { KpiCard } from "@/components/analytics/kpi-card"
+import { ExecutiveHealthCard } from "@/components/analytics/executive-health-card"
 import { ChartContainer } from "@/components/analytics/chart-container"
 import { SectionHeader } from "@/components/analytics/section-header"
 import { StatusBadge } from "@/components/analytics/status-badge"
@@ -9,6 +10,7 @@ import { translateStatus } from "@/lib/labels"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useSettlementMetrics, useCommissionTimeSeries, useSettlementStatusBreakdown, usePendingSettlementsBySeller, useRecentSettlements, usePayoutMetrics, useRecentPayments, usePrevSettlementMetrics, usePrevCommissionTimeSeries, usePrevPayoutMetrics } from "@/hooks/use-dashboard-data"
 import { computeTrend } from "@/lib/trends"
+import { calculateHealth, percentage } from "@/lib/health-score"
 
 const COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "var(--color-chart-5)"]
 
@@ -43,19 +45,44 @@ export default function FinanceDashboardPage() {
   const pendingLiqTrend = computeTrend(prevSettlementMetrics.data?.pending_cents, settlementMetrics.data?.pending_cents)
   const payoutVolTrend = computeTrend(prevPayoutMetrics.data?.total_cents, payoutMetrics.data?.total_cents)
   const velocityTrend = computeTrend(prevSettlementMetrics.data?.avg_velocity_days, settlementMetrics.data?.avg_velocity_days)
+  const settlementCount = settlementData
+    ? settlementData.paid_count + settlementData.pending_count + settlementData.failed_count
+    : null
+  const settlementCompletion = percentage(settlementData?.paid_count, settlementCount)
+  const payoutCompletion = percentage(payoutMetrics.data?.completed_count, payoutMetrics.data?.count)
+  const financeHealth = calculateHealth([
+    { value: settlementCompletion, weight: 70, critical: true },
+    { value: payoutCompletion, weight: 30 },
+  ])
+  const financeNeedsAction = financeHealth && ["urgent", "alert", "attention"].includes(financeHealth.status)
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <SectionHeader title="Panel de Finanzas" description="Liquidaciones, pagos, comisiones y seguimiento de pasivos" />
 
+      <ExecutiveHealthCard
+        section="Finanzas"
+        result={financeHealth}
+        sources={["payments"]}
+        isLoading={settlementMetrics.isLoading || payoutMetrics.isLoading}
+        error={settlementMetrics.error?.message ?? payoutMetrics.error?.message}
+        summary={settlementData ? `${settlementData.paid_count.toLocaleString("es-AR")} de ${(settlementCount ?? 0).toLocaleString("es-AR")} liquidaciones están pagadas; ${settlementData.pending_count.toLocaleString("es-AR")} permanecen pendientes.` : "Sin información suficiente para evaluar las finanzas."}
+        recommendation={financeNeedsAction ? "Reducir liquidaciones pendientes y revisar inmediatamente pagos fallidos o en revisión manual." : "Mantener el ritmo de liquidación y controlar que el pasivo pendiente no se acelere."}
+        metrics={[
+          { label: "Liquidaciones pagadas", value: settlementCompletion != null ? `${settlementCompletion.toFixed(1)}%` : "—" },
+          { label: "Payouts completados", value: payoutCompletion != null ? `${payoutCompletion.toFixed(1)}%` : "—" },
+          { label: "Velocidad promedio", value: settlementData ? `${settlementData.avg_velocity_days} días` : "—" },
+        ]}
+      />
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Comisiones" value={formatARS(totalCommission)} trend={commissionTrend ? { value: commissionTrend.label, direction: commissionTrend.direction } : undefined} isLoading={commission.isLoading} />
-        <KpiCard label="Liquidaciones Pendientes" value={settlementData ? formatARS(settlementData.pending_cents) : "—"} trend={pendingLiqTrend ? { value: pendingLiqTrend.label, direction: pendingLiqTrend.direction, positive: false } : undefined} isLoading={settlementMetrics.isLoading} />
-        <KpiCard label="Volumen de Pagos" value={payoutMetrics.data ? formatARS(payoutMetrics.data.total_cents) : "—"} trend={payoutVolTrend ? { value: payoutVolTrend.label, direction: payoutVolTrend.direction } : undefined} isLoading={payoutMetrics.isLoading} />
-        <KpiCard label="Velocidad de Liquidación" value={settlementData ? `${settlementData.avg_velocity_days} días` : "—"} trend={velocityTrend ? { value: velocityTrend.label, direction: velocityTrend.direction, positive: velocityTrend.direction === "down" } : undefined} isLoading={settlementMetrics.isLoading} />
+        <KpiCard label="Comisiones" value={formatARS(totalCommission)} trend={commissionTrend ? { value: commissionTrend.label, direction: commissionTrend.direction } : undefined} isLoading={commission.isLoading} dataSources={["payments"]} />
+        <KpiCard label="Liquidaciones Pendientes" value={settlementData ? formatARS(settlementData.pending_cents) : "—"} trend={pendingLiqTrend ? { value: pendingLiqTrend.label, direction: pendingLiqTrend.direction, positive: false } : undefined} isLoading={settlementMetrics.isLoading} dataSources={["payments"]} />
+        <KpiCard label="Volumen de Pagos" value={payoutMetrics.data ? formatARS(payoutMetrics.data.total_cents) : "—"} trend={payoutVolTrend ? { value: payoutVolTrend.label, direction: payoutVolTrend.direction } : undefined} isLoading={payoutMetrics.isLoading} dataSources={["payments"]} />
+        <KpiCard label="Velocidad de Liquidación" value={settlementData ? `${settlementData.avg_velocity_days} días` : "—"} trend={velocityTrend ? { value: velocityTrend.label, direction: velocityTrend.direction, positive: velocityTrend.direction === "down" } : undefined} isLoading={settlementMetrics.isLoading} dataSources={["payments"]} />
       </div>
 
-      <ChartContainer title="Comisiones (Diario)" isLoading={commission.isLoading} error={commission.error?.message} isEmpty={commissionData.length === 0}>
+      <ChartContainer title="Comisiones (Diario)" isLoading={commission.isLoading} error={commission.error?.message} isEmpty={commissionData.length === 0} dataSources={["payments"]}>
         <ResponsiveContainer width="100%" height={280}>
           <AreaChart data={commissionData}>
             <defs>
@@ -79,6 +106,7 @@ export default function FinanceDashboardPage() {
           isLoading={recentSettlements.isLoading}
           error={recentSettlements.error?.message}
           isEmpty={settlements.length === 0}
+          dataSources={["payments"]}
         >
           <Table>
             <TableHeader>
@@ -107,6 +135,7 @@ export default function FinanceDashboardPage() {
           isLoading={recentPayments.isLoading}
           error={recentPayments.error?.message}
           isEmpty={payments.length === 0}
+          dataSources={["payments"]}
         >
           <Table>
             <TableHeader>
@@ -132,7 +161,7 @@ export default function FinanceDashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <ChartContainer title="Pasivo de Liquidaciones Pendientes" isLoading={pendingBySeller.isLoading} error={pendingBySeller.error?.message} isEmpty={pendingData.length === 0}>
+        <ChartContainer title="Pasivo de Liquidaciones Pendientes" isLoading={pendingBySeller.isLoading} error={pendingBySeller.error?.message} isEmpty={pendingData.length === 0} dataSources={["payments", "seller"]}>
           {pendingData.length > 0 && (
             <p className="mb-4 text-2xl font-bold">{formatARS(pendingData.reduce((s, p) => s + p.total_cents, 0))} <span className="text-sm font-normal text-muted-foreground">pendientes a {pendingData.length} vendedores</span></p>
           )}
@@ -155,7 +184,7 @@ export default function FinanceDashboardPage() {
           </div>
         </ChartContainer>
 
-        <ChartContainer title="Distribución de Estados (Liquidaciones)" isLoading={statusBreakdown.isLoading} error={statusBreakdown.error?.message} isEmpty={statusData.length === 0}>
+        <ChartContainer title="Distribución de Estados (Liquidaciones)" isLoading={statusBreakdown.isLoading} error={statusBreakdown.error?.message} isEmpty={statusData.length === 0} dataSources={["payments"]}>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
               <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} dataKey="count" nameKey="status" label={({ name, value }) => `${translateStatus(name ?? "")} (${value})`}>

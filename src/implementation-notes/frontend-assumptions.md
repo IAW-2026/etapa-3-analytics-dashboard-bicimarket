@@ -18,12 +18,11 @@ The dashboard uses the **real Payments API exclusively** for all Payments/Settle
 via the server-side proxy route. No mock fallback exists for payment-related endpoints — if the API returns
 empty data, the chart shows the empty state ("No hay datos disponibles para este período.").
 
-The following hooks have **no real API endpoint yet** and use mock data directly:
+The following hooks still use mock data directly:
 
 | Hook | Mock Module | Reason |
 |---|---|---|
 | `useProductMetrics` / `usePrevProductMetrics` | `@/lib/mock/products` | No Seller App admin endpoint |
-| `useShipmentMetrics` / `usePrevShipmentMetrics` | `@/lib/mock/shipments` | No Shipping App admin endpoint |
 | `useSalesOrderMetrics` / `usePrevSalesOrderMetrics` | `@/lib/mock/sales-orders` | No Seller App admin endpoint |
 | `useSellerMetrics` / `usePrevSellerMetrics` | `@/lib/mock/sellers` | No Seller App admin endpoint |
 

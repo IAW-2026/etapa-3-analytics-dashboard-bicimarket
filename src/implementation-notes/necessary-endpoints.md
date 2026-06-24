@@ -2,7 +2,7 @@
 
 The dashboard consumes data from **4 backend apps**: Payments, Seller, Shipping, and Buyer (future).
 Payments data flows through a **server-side proxy** (`/api/internal/analytics/payments/[...slug]`).
-Seller, Shipping, and Buyer data are **mocked** until those apps expose admin endpoints.
+Shipping data flows through `/api/internal/analytics/shipping/[...slug]` when its upstream endpoints are available.
 
 **Conventions:**
 - All endpoints prefixed `/api/v1/...` (public business endpoints) or `/api/internal/...` (server-to-server).
@@ -128,13 +128,14 @@ The dashboard imports them dynamically in `use-dashboard-data.ts`.
 
 ---
 
-## Shipping App — Mock (no real API yet)
+## Shipping App — Real API (via proxy)
 
 ### Shipments
 
-| # | Endpoint | Mock Hook | Notes |
+| # | Endpoint | Consumer | Notes |
 |---|---|---|---|
 | SH1 | `GET /api/v1/shipments/metrics?from=&to=` | `useShipmentMetrics`, `usePrevShipmentMetrics` | Returns `{ total, delivered_count, in_transit_count, failed_count, fulfillment_rate, avg_delivery_time_days, backlog_by_status: [{ status, count }] }`. Statuses: `created, ready_for_pickup, picked_up, in_transit, out_for_delivery, delivered, failed_delivery, returned`. |
+| SH2 | `GET /api/v1/shipments?from=&to=&status=&page=&limit=` | `shippingApi.getShipments` | Paginated shipment list, available for future dashboard views. |
 
 ---
 

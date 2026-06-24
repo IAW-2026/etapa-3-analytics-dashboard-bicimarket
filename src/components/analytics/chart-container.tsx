@@ -3,6 +3,7 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import { AlertCircle, Inbox } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { DataSourceInfo, type DataSource } from "@/components/analytics/data-source-info"
 
 interface ChartContainerProps {
   title: string
@@ -13,6 +14,7 @@ interface ChartContainerProps {
   onRetry?: () => void
   children: React.ReactNode
   action?: React.ReactNode
+  dataSources?: DataSource[]
 }
 
 export function ChartContainer({
@@ -24,11 +26,15 @@ export function ChartContainer({
   onRetry,
   children,
   action,
+  dataSources,
 }: ChartContainerProps) {
   return (
     <div className="rounded-xl border border-border/60 bg-card p-5 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-sm font-medium">{title}</h3>
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-sm font-medium">{title}</h3>
+          {dataSources?.length ? <DataSourceInfo sources={dataSources} /> : null}
+        </div>
         {action}
       </div>
 

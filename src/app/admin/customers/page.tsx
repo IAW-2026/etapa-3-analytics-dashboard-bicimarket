@@ -2,12 +2,14 @@
 
 import { ComposedChart, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Line, LabelList, Legend } from "recharts"
 import { KpiCard } from "@/components/analytics/kpi-card"
+import { ExecutiveHealthCard } from "@/components/analytics/executive-health-card"
 import { ChartContainer } from "@/components/analytics/chart-container"
 import { SectionHeader } from "@/components/analytics/section-header"
 import { useRevenueByMethod, useBuyerMetrics, usePrevBuyerMetrics, useBuyers } from "@/hooks/use-dashboard-data"
 import { translateMethod } from "@/lib/labels"
 import { computeTrend } from "@/lib/trends"
 import { Users } from "lucide-react"
+import { calculateHealth, inversePercentage } from "@/lib/health-score"
 
 const COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "var(--color-chart-5)"]
 
@@ -31,6 +33,12 @@ export default function CustomerAnalyticsPage() {
     prevBuyerMetrics.data?.new_this_period,
     buyerMetrics.data?.new_this_period,
   )
+  const customerRetention = inversePercentage(buyerMetrics.data?.at_risk_count, buyerMetrics.data?.total)
+  const customerHealth = calculateHealth([
+    { value: buyerMetrics.data?.repeat_rate, weight: 60, critical: true },
+    { value: customerRetention, weight: 40 },
+  ])
+  const customersNeedAction = customerHealth && ["urgent", "alert", "attention"].includes(customerHealth.status)
 
   const MONTH_NAMES_ES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
@@ -43,9 +51,8 @@ export default function CustomerAnalyticsPage() {
       buckets.set(month, (buckets.get(month) ?? 0) + 1)
     }
     const entries = Array.from(buckets.entries()).sort(([a], [b]) => a.localeCompare(b))
-    let cumulative = 0
     return entries.map(([month, count], i) => {
-      cumulative += count
+      const cumulative = entries.slice(0, i + 1).reduce((sum, [, monthlyCount]) => sum + monthlyCount, 0)
       const [year, monthNum] = month.split("-")
       const prevYear = i > 0 ? entries[i - 1][0].split("-")[0] : null
       const label = prevYear !== year
@@ -91,27 +98,46 @@ export default function CustomerAnalyticsPage() {
     <div className="mx-auto max-w-7xl space-y-6">
       <SectionHeader title="Analítica de Clientes" description="Adquisición, comportamiento y segmentación de clientes" />
 
+      <ExecutiveHealthCard
+        section="Clientes"
+        result={customerHealth}
+        sources={["buyer"]}
+        isLoading={buyerMetrics.isLoading}
+        error={buyerMetrics.error?.message}
+        summary={buyerMetrics.data ? `${buyerMetrics.data.repeat_rate.toFixed(1)}% de recompra y ${buyerMetrics.data.at_risk_count.toLocaleString("es-AR")} compradores sin actividad reciente.` : "Sin información suficiente para evaluar la base de clientes."}
+        recommendation={customersNeedAction ? "Activar campañas de recompra y recuperación para los compradores con riesgo de abandono." : "Profundizar fidelización y mantener activa la base de compradores recurrentes."}
+        metrics={[
+          { label: "Tasa de recompra", value: buyerMetrics.data ? `${buyerMetrics.data.repeat_rate.toFixed(1)}%` : "—" },
+          { label: "Retención estimada", value: customerRetention != null ? `${customerRetention.toFixed(1)}%` : "—" },
+          { label: "Nuevos compradores", value: buyerMetrics.data?.new_this_period.toLocaleString("es-AR") ?? "—" },
+        ]}
+      />
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Total Compradores"
           value={buyerMetrics.data?.total != null ? buyerMetrics.data.total.toLocaleString("es-AR") : "—"}
           isLoading={buyerMetrics.isLoading}
+          dataSources={["buyer"]}
         />
         <KpiCard
           label="Nuevos Compradores"
           value={buyerMetrics.data?.new_this_period != null ? buyerMetrics.data.new_this_period.toLocaleString("es-AR") : "—"}
           trend={newBuyersTrend ? { value: newBuyersTrend.label, direction: newBuyersTrend.direction } : undefined}
           isLoading={buyerMetrics.isLoading}
+          dataSources={["buyer"]}
         />
         <KpiCard
           label="Tasa de Recompra"
           value={buyerMetrics.data?.repeat_rate != null ? `${buyerMetrics.data.repeat_rate.toFixed(1)}%` : "—"}
           isLoading={buyerMetrics.isLoading}
+          dataSources={["buyer"]}
         />
         <KpiCard
           label="Compradores en Riesgo"
           value={buyerMetrics.data?.at_risk_count != null ? buyerMetrics.data.at_risk_count.toLocaleString("es-AR") : "—"}
           isLoading={buyerMetrics.isLoading}
+          dataSources={["buyer"]}
         />
       </div>
 
@@ -121,6 +147,7 @@ export default function CustomerAnalyticsPage() {
           isLoading={buyers.isLoading}
           error={buyers.error?.message}
           isEmpty={acquisitionData.length === 0}
+          dataSources={["buyer"]}
         >
           <ResponsiveContainer width="100%" height={260}>
             <ComposedChart data={acquisitionData} margin={{ top: 20, right: 32, left: 0, bottom: 0 }}>
@@ -178,6 +205,7 @@ export default function CustomerAnalyticsPage() {
           isLoading={buyers.isLoading}
           error={buyers.error?.message}
           isEmpty={segmentData.length === 0}
+          dataSources={["buyer"]}
         >
           <ResponsiveContainer width="100%" height={280}>
             <PieChart margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
@@ -207,6 +235,7 @@ export default function CustomerAnalyticsPage() {
           isLoading={buyers.isLoading}
           error={buyers.error?.message}
           isEmpty={frequencyData.length === 0}
+          dataSources={["buyer"]}
         >
           <ResponsiveContainer width="100%" height={230}>
             <BarChart data={frequencyData} margin={{ top: 24, right: 8, left: 0, bottom: 16 }}>
@@ -230,6 +259,7 @@ export default function CustomerAnalyticsPage() {
           isLoading={buyerMetrics.isLoading}
           error={buyerMetrics.error?.message}
           isEmpty={false}
+          dataSources={["buyer"]}
         >
           <div className="flex h-[230px] flex-col items-center justify-center gap-3 text-center">
             <Users className="size-10 text-muted-foreground" />
@@ -247,6 +277,7 @@ export default function CustomerAnalyticsPage() {
           isLoading={byMethod.isLoading}
           error={byMethod.error?.message}
           isEmpty={methodData.length === 0}
+          dataSources={["payments"]}
         >
           <ResponsiveContainer width="100%" height={280}>
             <PieChart margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
@@ -272,6 +303,7 @@ export default function CustomerAnalyticsPage() {
         isLoading={buyers.isLoading}
         error={buyers.error?.message}
         isEmpty={topBuyers.length === 0}
+        dataSources={["buyer"]}
       >
         <table className="w-full table-auto text-sm">
           <thead>

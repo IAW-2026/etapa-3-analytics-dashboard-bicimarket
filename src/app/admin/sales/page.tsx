@@ -1,12 +1,14 @@
 "use client"
 
-import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from "recharts"
+import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts"
 import { KpiCard } from "@/components/analytics/kpi-card"
+import { ExecutiveHealthCard } from "@/components/analytics/executive-health-card"
 import { ChartContainer } from "@/components/analytics/chart-container"
 import { SectionHeader } from "@/components/analytics/section-header"
 import { usePaymentMetrics, useRevenueTimeSeries, useRevenueByDayOfWeek, useRevenueByMethod, useRevenueBySeller, usePrevPaymentMetrics, usePrevRevenueTotal } from "@/hooks/use-dashboard-data"
 import { computeTrend } from "@/lib/trends"
 import { translateMethod } from "@/lib/labels"
+import { calculateHealth, trendHealth } from "@/lib/health-score"
 
 const COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "var(--color-chart-5)"]
 
@@ -29,6 +31,14 @@ export default function SalesAnalyticsPage() {
   const ingresosTrend = computeTrend(prevRevenue.data, totalRevenue)
   const ordersTrend = computeTrend(prevMetrics.data?.count, metrics.data?.count)
   const ticketTrend = computeTrend(prevMetrics.data?.avg_order_cents, metrics.data?.avg_order_cents)
+  const revenueHealth = trendHealth(prevRevenue.data, totalRevenue)
+  const ordersHealth = trendHealth(prevMetrics.data?.count, metrics.data?.count)
+  const salesHealth = calculateHealth([
+    { value: metrics.data?.success_rate, weight: 70, critical: true },
+    { value: revenueHealth, weight: 15 },
+    { value: ordersHealth, weight: 15 },
+  ])
+  const salesNeedsAction = salesHealth && ["urgent", "alert", "attention"].includes(salesHealth.status)
 
   const methodData = byMethod.data?.map((m) => ({
     ...m,
@@ -41,16 +51,31 @@ export default function SalesAnalyticsPage() {
     <div className="mx-auto max-w-7xl space-y-6">
       <SectionHeader title="Analítica de Ventas" description="Ingresos, órdenes y rendimiento de ventas" />
 
+      <ExecutiveHealthCard
+        section="Ventas"
+        result={salesHealth}
+        sources={["payments"]}
+        isLoading={metrics.isLoading || revenue.isLoading || prevRevenue.isLoading}
+        error={metrics.error?.message ?? revenue.error?.message}
+        summary={metrics.data ? `${metrics.data.approved_count.toLocaleString("es-AR")} de ${metrics.data.count.toLocaleString("es-AR")} pagos fueron aprobados en el período.` : "Sin información suficiente para evaluar las ventas."}
+        recommendation={salesNeedsAction ? "Priorizar la recuperación de pagos rechazados y revisar la caída de ingresos u órdenes." : "Sostener la conversión y profundizar los canales y vendedores con mayor crecimiento."}
+        metrics={[
+          { label: "Éxito de pagos", value: metrics.data ? `${metrics.data.success_rate.toFixed(1)}%` : "—" },
+          { label: "Evolución de ingresos", value: ingresosTrend?.label ?? "Sin comparación" },
+          { label: "Evolución de órdenes", value: ordersTrend?.label ?? "Sin comparación" },
+        ]}
+      />
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiCard label="Ingresos" value={formatARS(totalRevenue)} trend={ingresosTrend ? { value: ingresosTrend.label, direction: ingresosTrend.direction } : undefined} isLoading={metrics.isLoading} />
-        <KpiCard label="Órdenes" value={metrics.data?.count != null ? metrics.data.count.toLocaleString("es-AR") : "—"} trend={ordersTrend ? { value: ordersTrend.label, direction: ordersTrend.direction } : undefined} isLoading={metrics.isLoading} />
-        <KpiCard label="Ticket Promedio" value={metrics.data ? formatARS(metrics.data.avg_order_cents) : "—"} trend={ticketTrend ? { value: ticketTrend.label, direction: ticketTrend.direction } : undefined} isLoading={metrics.isLoading} />
-        <KpiCard label="Crecimiento" value={ingresosTrend?.label ?? "—"} trend={ingresosTrend ? { value: ingresosTrend.label, direction: ingresosTrend.direction } : undefined} isLoading={metrics.isLoading} />
+        <KpiCard label="Ingresos" value={formatARS(totalRevenue)} trend={ingresosTrend ? { value: ingresosTrend.label, direction: ingresosTrend.direction } : undefined} isLoading={metrics.isLoading} dataSources={["payments"]} />
+        <KpiCard label="Órdenes" value={metrics.data?.count != null ? metrics.data.count.toLocaleString("es-AR") : "—"} trend={ordersTrend ? { value: ordersTrend.label, direction: ordersTrend.direction } : undefined} isLoading={metrics.isLoading} dataSources={["payments"]} />
+        <KpiCard label="Ticket Promedio" value={metrics.data ? formatARS(metrics.data.avg_order_cents) : "—"} trend={ticketTrend ? { value: ticketTrend.label, direction: ticketTrend.direction } : undefined} isLoading={metrics.isLoading} dataSources={["payments"]} />
+        <KpiCard label="Crecimiento" value={ingresosTrend?.label ?? "—"} trend={ingresosTrend ? { value: ingresosTrend.label, direction: ingresosTrend.direction } : undefined} isLoading={metrics.isLoading} dataSources={["payments"]} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <ChartContainer             title="Ingresos en el Tiempo" isLoading={revenue.isLoading} error={revenue.error?.message} isEmpty={revenueData.length === 0}>
+          <ChartContainer title="Ingresos en el Tiempo" isLoading={revenue.isLoading} error={revenue.error?.message} isEmpty={revenueData.length === 0} dataSources={["payments"]}>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={revenueData}>
                 <defs>
@@ -69,7 +94,7 @@ export default function SalesAnalyticsPage() {
           </ChartContainer>
         </div>
         <div>
-          <ChartContainer             title="Ingresos por Método" isLoading={byMethod.isLoading} error={byMethod.error?.message} isEmpty={methodData.length === 0}>
+          <ChartContainer title="Ingresos por Método" isLoading={byMethod.isLoading} error={byMethod.error?.message} isEmpty={methodData.length === 0} dataSources={["payments"]}>
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
                 <Pie data={methodData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} dataKey="value" nameKey="label" label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}>
@@ -83,7 +108,7 @@ export default function SalesAnalyticsPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <ChartContainer             title="Ingresos por Vendedor (Top 10)" isLoading={topSellers.isLoading} error={topSellers.error?.message} isEmpty={sellerData.length === 0}>
+        <ChartContainer title="Ingresos por Vendedor (Top 10)" isLoading={topSellers.isLoading} error={topSellers.error?.message} isEmpty={sellerData.length === 0} dataSources={["payments", "seller"]}>
           <div className="space-y-3">
             {sellerData.map((seller, idx) => {
               const maxRevenue = sellerData[0]?.revenue_cents ?? 1
@@ -106,7 +131,7 @@ export default function SalesAnalyticsPage() {
           </div>
         </ChartContainer>
 
-        <ChartContainer title="Ingresos por Día de la Semana" isLoading={dayOfWeek.isLoading} error={dayOfWeek.error?.message} isEmpty={dayOfWeek.data?.length === 0}>
+        <ChartContainer title="Ingresos por Día de la Semana" isLoading={dayOfWeek.isLoading} error={dayOfWeek.error?.message} isEmpty={dayOfWeek.data?.length === 0} dataSources={["payments"]}>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={dayOfWeek.data}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
