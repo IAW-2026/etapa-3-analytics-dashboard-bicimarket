@@ -70,53 +70,6 @@ export interface Payout {
   last_error: string | null
 }
 
-export interface Product {
-  id: string
-  seller_profile_id: string
-  seller_name: string
-  title: string
-  category: ProductCategory
-  condition: ProductCondition
-  price_cents: number
-  status: "active" | "inactive" | "draft"
-  created_at: string
-}
-
-export type ProductCategory =
-  | "mtb"
-  | "road"
-  | "urban"
-  | "kids"
-  | "bmx"
-  | "parts"
-  | "accessories"
-  | "indumentaria"
-
-export type ProductCondition =
-  | "new"
-  | "used_like_new"
-  | "used_good"
-  | "used_fair"
-
-export interface SalesOrder {
-  id: string
-  order_id: string
-  seller_profile_id: string
-  seller_name: string
-  fulfillment_status:
-    | "pending"
-    | "accepted"
-    | "preparing"
-    | "ready_to_ship"
-    | "handed_over"
-    | "delivered"
-    | "rejected"
-    | "cancelled"
-  payment_status: "pending" | "paid" | "refunded"
-  total_cents: number
-  created_at: string
-}
-
 export interface Shipment {
   id: string
   order_id: string
@@ -136,24 +89,6 @@ export interface Shipment {
   delivered_at: string | null
   estimated_days_min: number
   estimated_days_max: number
-}
-
-export interface SellerProfile {
-  id: string
-  display_name: string
-  verification_status: "pending_review" | "verified" | "suspended" | "in_review"
-  created_at: string
-  product_count: number
-}
-
-export interface BuyerProfile {
-  id: string
-  display_name: string
-  email: string
-  created_at: string
-  order_count: number
-  total_spent_cents: number
-  last_purchase_at: string | null
 }
 
 export type DatePreset = "7d" | "30d" | "90d" | "1y" | "custom"

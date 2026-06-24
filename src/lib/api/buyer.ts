@@ -1,4 +1,4 @@
-import type { FilterState, PaginatedResponse, Buyer } from "@/lib/mock/types"
+import type { FilterState, PaginatedResponse, Buyer } from "@/lib/types"
 
 const BASE = "/api/internal/analytics/buyer"
 

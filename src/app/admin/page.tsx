@@ -8,7 +8,7 @@ import { AttentionItems } from "@/components/analytics/attention-items"
 import { useRevenueTimeSeries, usePaymentMetrics, useRevenueByDayOfWeek, useSettlementMetrics, useRevenueBySeller, useRefundMetrics, usePrevRevenueTotal, usePrevPaymentMetrics, usePrevSettlementMetrics } from "@/hooks/use-dashboard-data"
 import { computeTrend } from "@/lib/trends"
 import { formatCompactARS, formatDateLabel } from "@/lib/utils"
-import type { AttentionItem } from "@/lib/mock/types"
+import type { AttentionItem } from "@/lib/types"
 
 function formatARS(cents: number | undefined | null) {
   if (cents == null || Number.isNaN(cents)) return "—"

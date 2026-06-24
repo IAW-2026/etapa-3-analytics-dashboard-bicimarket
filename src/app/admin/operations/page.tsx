@@ -46,7 +46,7 @@ import {
 import { useDashboardStore } from "@/lib/dashboard-store"
 import { computeTrend } from "@/lib/trends"
 import { calculateHealth, inversePercentage } from "@/lib/health-score"
-import type { Shipment } from "@/lib/mock/types"
+import type { Shipment } from "@/lib/types"
 
 const STATUS_LABELS: Record<Shipment["status"], string> = {
   created: "Creado",

@@ -1,4 +1,4 @@
-import type { FilterState, TimeSeriesPoint, PaginatedResponse, Payment, Settlement, Payout } from "@/lib/mock/types"
+import type { FilterState, TimeSeriesPoint, PaginatedResponse, Payment, Settlement, Payout } from "@/lib/types"
 
 const BASE = "/api/internal/analytics/payments"
 

@@ -18,7 +18,8 @@ export function formatCompactARS(cents: number | undefined | null): string {
 }
 
 export function formatDateLabel(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00")
+  if (!dateStr) return ""
+  const d = parseDashboardDate(dateStr)
   if (isNaN(d.getTime())) return dateStr
   return d.toLocaleDateString("es-AR", { day: "2-digit", month: "short" })
 }

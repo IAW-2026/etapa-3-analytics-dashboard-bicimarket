@@ -8,7 +8,7 @@ import { SectionHeader } from "@/components/analytics/section-header"
 import { StatusBadge } from "@/components/analytics/status-badge"
 import { translateStatus } from "@/lib/labels"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { useSettlementMetrics, useCommissionTimeSeries, useSettlementStatusBreakdown, usePendingSettlementsBySeller, useRecentSettlements, usePayoutMetrics, useRecentPayments, usePrevSettlementMetrics, usePrevCommissionTimeSeries, usePrevPayoutMetrics } from "@/hooks/use-dashboard-data"
+import { useSettlementMetrics, useCommissionTimeSeries, useSettlementStatusBreakdown, usePendingSettlementsBySeller, useRecentSettlements, usePayoutMetrics, useRecentPayments, usePrevSettlementMetrics, usePrevCommissionTimeSeries, usePrevPayoutMetrics, useSellers } from "@/hooks/use-dashboard-data"
 import { computeTrend } from "@/lib/trends"
 import { formatCompactARS, formatDateLabel, formatDisplayDate } from "@/lib/utils"
 import { calculateHealth, percentage } from "@/lib/health-score"
@@ -39,8 +39,16 @@ export default function FinanceDashboardPage() {
   const settlementData = settlementMetrics.data
   const statusData = statusBreakdown.data ?? []
   const pendingData = pendingBySeller.data ?? []
-  const settlements = recentSettlements.data?.data ?? []
+  const settlementsRaw = recentSettlements.data?.data ?? []
   const payments = recentPayments.data?.data ?? []
+  const sellers = useSellers({ limit: 100 })
+  const sellerNameMap = new Map<string, string>(
+    (sellers.data?.data ?? []).map((s) => [s.id, s.display_name]),
+  )
+  const settlements = settlementsRaw.map((s) => ({
+    ...s,
+    seller_name: s.seller_name || sellerNameMap.get(s.seller_profile_id) || s.seller_profile_id,
+  }))
 
   const commissionTrend = computeTrend(prevTotalCommission, totalCommission)
   const pendingLiqTrend = computeTrend(prevSettlementMetrics.data?.pending_cents, settlementMetrics.data?.pending_cents)

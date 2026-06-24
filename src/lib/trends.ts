@@ -1,4 +1,4 @@
-import type { FilterState } from "@/lib/mock/types"
+import type { FilterState } from "@/lib/types"
 
 export type TrendDirection = "up" | "down" | "flat"
 

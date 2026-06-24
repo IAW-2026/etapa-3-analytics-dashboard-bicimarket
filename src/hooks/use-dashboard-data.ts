@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query"
 import { useDashboardStore } from "@/lib/dashboard-store"
-import type { FilterState } from "@/lib/mock/types"
+import type { FilterState } from "@/lib/types"
 import { getPrevFilters } from "@/lib/trends"
 import * as paymentsApi from "@/lib/api/payments"
 import * as buyerApi from "@/lib/api/buyer"
@@ -218,18 +218,22 @@ export function useTopProductsByRevenue() {
       for (const p of approved) {
         for (const group of p.items_summary ?? []) {
           for (const item of group.items ?? []) {
-            const productName =
-              item.product_name_snapshot && item.product_name_snapshot !== "Producto"
-                ? item.product_name_snapshot
-                : item.product_id
-            const current = productBuckets.get(item.product_id) ?? {
-              name: productName,
-              revenue: 0,
-              units: 0,
+            const current = productBuckets.get(item.product_id)
+            const name = item.product_name_snapshot?.trim()
+              ? item.product_name_snapshot
+              : undefined
+
+            if (current) {
+              current.revenue += item.unit_price_cents * item.quantity
+              current.units += item.quantity
+              if (name) current.name = name
+            } else {
+              productBuckets.set(item.product_id, {
+                name: name ?? item.product_id,
+                revenue: item.unit_price_cents * item.quantity,
+                units: item.quantity,
+              })
             }
-            current.revenue += item.unit_price_cents * item.quantity
-            current.units += item.quantity
-            productBuckets.set(item.product_id, current)
           }
         }
       }

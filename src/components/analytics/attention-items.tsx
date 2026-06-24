@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Ban, Info } from "lucide-react"
 import { DataSourceInfo, type DataSource } from "@/components/analytics/data-source-info"
-import type { AttentionItem } from "@/lib/mock/types"
+import type { AttentionItem } from "@/lib/types"
 
 interface AttentionItemsProps {
   items: AttentionItem[]

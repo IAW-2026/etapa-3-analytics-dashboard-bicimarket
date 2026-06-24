@@ -1,4 +1,4 @@
-import type { FilterState, PaginatedResponse, Shipment } from "@/lib/mock/types"
+import type { FilterState, PaginatedResponse, Shipment } from "@/lib/types"
 
 const BASE = "/api/internal/analytics/shipping"
 

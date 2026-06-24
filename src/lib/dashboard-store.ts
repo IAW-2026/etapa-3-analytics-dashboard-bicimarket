@@ -2,7 +2,7 @@
 
 import { create } from "zustand"
 import { subDays, startOfDay } from "date-fns"
-import type { DatePreset } from "./mock/types"
+import type { DatePreset } from "@/lib/types"
 
 function getDateRange(preset: DatePreset) {
   const now = startOfDay(new Date())

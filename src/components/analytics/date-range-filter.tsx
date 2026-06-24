@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { useDashboardStore } from "@/lib/dashboard-store"
-import type { DatePreset } from "@/lib/mock/types"
+import type { DatePreset } from "@/lib/types"
 
 const presets: { value: DatePreset; label: string }[] = [
   { value: "7d", label: "7d" },
