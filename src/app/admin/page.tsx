@@ -7,6 +7,7 @@ import { SectionHeader } from "@/components/analytics/section-header"
 import { AttentionItems } from "@/components/analytics/attention-items"
 import { useRevenueTimeSeries, usePaymentMetrics, useRevenueByDayOfWeek, useSettlementMetrics, useRevenueBySeller, useRefundMetrics, usePrevRevenueTotal, usePrevPaymentMetrics, usePrevSettlementMetrics } from "@/hooks/use-dashboard-data"
 import { computeTrend } from "@/lib/trends"
+import { formatCompactARS, formatDateLabel } from "@/lib/utils"
 import type { AttentionItem } from "@/lib/mock/types"
 
 function formatARS(cents: number | undefined | null) {
@@ -102,8 +103,8 @@ export default function ExecutiveOverviewPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => v.slice(5)} className="text-muted-foreground" />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `ARS ${(v / 100000).toFixed(0)}`} className="text-muted-foreground" />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => formatDateLabel(v)} className="text-muted-foreground" />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatCompactARS(v)} className="text-muted-foreground" />
                 <Tooltip
                   contentStyle={{ borderRadius: "8px", fontSize: "13px" }}
                   formatter={(value) => [formatARS(Number(value ?? 0)), "Ingresos"]}
@@ -167,7 +168,7 @@ export default function ExecutiveOverviewPage() {
             <BarChart data={dayOfWeek.data}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis dataKey="day" tick={{ fontSize: 11 }} className="text-muted-foreground" />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `ARS ${(v / 100000).toFixed(0)}`} className="text-muted-foreground" />
+              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatCompactARS(v)} className="text-muted-foreground" />
               <Tooltip
                 contentStyle={{ borderRadius: "8px", fontSize: "13px" }}
                 formatter={(value) => [formatARS(Number(value ?? 0)), "Ingresos"]}

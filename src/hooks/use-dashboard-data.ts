@@ -40,6 +40,27 @@ function resolveSellerNames<T extends { seller_profile_id: string }>(
   }))
 }
 
+function mergeByName<T extends { seller_name: string; revenue_cents?: number; total_cents?: number }>(
+  items: T[],
+): T[] {
+  const merged = new Map<string, T>()
+  for (const item of items) {
+    const key = item.seller_name
+    const existing = merged.get(key)
+    if (existing) {
+      if ("revenue_cents" in item && "revenue_cents" in existing) {
+        existing.revenue_cents = (existing.revenue_cents ?? 0) + (item.revenue_cents ?? 0)
+      }
+      if ("total_cents" in item && "total_cents" in existing) {
+        existing.total_cents = (existing.total_cents ?? 0) + (item.total_cents ?? 0)
+      }
+    } else {
+      merged.set(key, { ...item })
+    }
+  }
+  return Array.from(merged.values())
+}
+
 // ── Payments ────────────────────────────────────────────────
 
 export function useRevenueTimeSeries() {
@@ -88,7 +109,7 @@ export function useRevenueBySeller() {
         paymentsApi.getRevenueBySeller(getFilters()),
         fetchSellerNameMap(),
       ])
-      return resolveSellerNames(data, nameMap).sort((a, b) => b.revenue_cents - a.revenue_cents)
+      return mergeByName(resolveSellerNames(data, nameMap)).sort((a, b) => b.revenue_cents - a.revenue_cents)
     },
     select: (data) => (Array.isArray(data) ? data : []) as typeof data,
   })
@@ -140,7 +161,7 @@ export function usePendingSettlementsBySeller() {
         paymentsApi.getPendingSettlementsBySeller(getFilters()),
         fetchSellerNameMap(),
       ])
-      return resolveSellerNames(data, nameMap).sort((a, b) => b.total_cents - a.total_cents)
+      return mergeByName(resolveSellerNames(data, nameMap)).sort((a, b) => b.total_cents - a.total_cents)
     },
     select: (data) => (Array.isArray(data) ? data : []) as typeof data,
   })
@@ -195,8 +216,8 @@ export function useTopProductsByRevenue() {
       const productBuckets = new Map<string, { name: string; revenue: number; units: number }>()
 
       for (const p of approved) {
-        for (const group of p.items_summary) {
-          for (const item of group.items) {
+        for (const group of p.items_summary ?? []) {
+          for (const item of group.items ?? []) {
             const current = productBuckets.get(item.product_id) ?? {
               name: item.product_name_snapshot,
               revenue: 0,

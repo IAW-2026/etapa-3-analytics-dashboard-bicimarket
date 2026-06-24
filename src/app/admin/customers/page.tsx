@@ -215,15 +215,17 @@ export default function CustomerAnalyticsPage() {
                 cy="50%"
                 innerRadius={60}
                 outerRadius={90}
+                minAngle={10}
                 dataKey="count"
                 nameKey="label"
-                label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                label={({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`}
               >
                 {segmentData.map((_, idx) => (
                   <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
                 ))}
               </Pie>
               <Tooltip formatter={(value) => [value, "Compradores"]} />
+              <Legend wrapperStyle={{ fontSize: "12px" }} formatter={(value: string) => <span className="text-muted-foreground">{value}</span>} />
             </PieChart>
           </ResponsiveContainer>
         </ChartContainer>
@@ -287,13 +289,15 @@ export default function CustomerAnalyticsPage() {
                 cy="50%"
                 innerRadius={60}
                 outerRadius={90}
+                minAngle={10}
                 dataKey="value"
                 nameKey="label"
-                label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
+                label={({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`}
               >
                 {methodData.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
               </Pie>
               <Tooltip formatter={(value) => [formatARS(Number(value ?? 0)), "Volumen"]} />
+              <Legend wrapperStyle={{ fontSize: "12px" }} formatter={(value: string) => <span className="text-muted-foreground">{value}</span>} />
             </PieChart>
           </ResponsiveContainer>
         </ChartContainer>

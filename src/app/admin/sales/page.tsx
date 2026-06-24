@@ -1,6 +1,6 @@
 "use client"
 
-import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts"
+import { AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from "recharts"
 import { KpiCard } from "@/components/analytics/kpi-card"
 import { ExecutiveHealthCard } from "@/components/analytics/executive-health-card"
 import { ChartContainer } from "@/components/analytics/chart-container"
@@ -8,6 +8,7 @@ import { SectionHeader } from "@/components/analytics/section-header"
 import { usePaymentMetrics, useRevenueTimeSeries, useRevenueByDayOfWeek, useRevenueByMethod, useRevenueBySeller, usePrevPaymentMetrics, usePrevRevenueTotal } from "@/hooks/use-dashboard-data"
 import { computeTrend } from "@/lib/trends"
 import { translateMethod } from "@/lib/labels"
+import { formatCompactARS, formatDateLabel } from "@/lib/utils"
 import { calculateHealth, trendHealth } from "@/lib/health-score"
 
 const COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "var(--color-chart-5)"]
@@ -85,8 +86,8 @@ export default function SalesAnalyticsPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => v.slice(5)} className="text-muted-foreground" />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `ARS ${(v / 100000).toFixed(0)}`} className="text-muted-foreground" />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => formatDateLabel(v)} className="text-muted-foreground" />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatCompactARS(v)} className="text-muted-foreground" />
                 <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "13px" }} formatter={(value) => [formatARS(Number(value ?? 0)), "Ingresos"]} />
                 <Area type="monotone" dataKey="value" stroke="var(--color-chart-1)" fill="url(#salesRevGradient)" strokeWidth={2} />
               </AreaChart>
@@ -97,10 +98,11 @@ export default function SalesAnalyticsPage() {
           <ChartContainer title="Ingresos por Método" isLoading={byMethod.isLoading} error={byMethod.error?.message} isEmpty={methodData.length === 0} dataSources={["payments"]}>
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
-                <Pie data={methodData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} dataKey="value" nameKey="label" label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}>
+                <Pie data={methodData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} minAngle={10} dataKey="value" nameKey="label" label={({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`}>
                   {methodData.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
                 </Pie>
                 <Tooltip formatter={(value) => [formatARS(Number(value ?? 0)), "Ingresos"]} />
+                <Legend wrapperStyle={{ fontSize: "12px" }} formatter={(value: string) => <span className="text-muted-foreground">{value}</span>} />
               </PieChart>
             </ResponsiveContainer>
           </ChartContainer>
@@ -136,7 +138,7 @@ export default function SalesAnalyticsPage() {
             <BarChart data={dayOfWeek.data}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis dataKey="day" tick={{ fontSize: 11 }} className="text-muted-foreground" />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `ARS ${(v / 100000).toFixed(0)}`} className="text-muted-foreground" />
+              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatCompactARS(v)} className="text-muted-foreground" />
               <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "13px" }} formatter={(value) => [formatARS(Number(value ?? 0)), "Ingresos"]} />
               <Bar dataKey="value" fill="var(--color-chart-2)" radius={[4, 4, 0, 0]} />
             </BarChart>

@@ -1,6 +1,6 @@
 "use client"
 
-import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts"
+import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from "recharts"
 import { KpiCard } from "@/components/analytics/kpi-card"
 import { ExecutiveHealthCard } from "@/components/analytics/executive-health-card"
 import { ChartContainer } from "@/components/analytics/chart-container"
@@ -10,6 +10,7 @@ import { translateStatus } from "@/lib/labels"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useSettlementMetrics, useCommissionTimeSeries, useSettlementStatusBreakdown, usePendingSettlementsBySeller, useRecentSettlements, usePayoutMetrics, useRecentPayments, usePrevSettlementMetrics, usePrevCommissionTimeSeries, usePrevPayoutMetrics } from "@/hooks/use-dashboard-data"
 import { computeTrend } from "@/lib/trends"
+import { formatCompactARS, formatDateLabel } from "@/lib/utils"
 import { calculateHealth, percentage } from "@/lib/health-score"
 
 const COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "var(--color-chart-5)"]
@@ -92,8 +93,8 @@ export default function FinanceDashboardPage() {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-            <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => v.slice(5)} className="text-muted-foreground" />
-            <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `ARS ${(v / 100000).toFixed(0)}`} className="text-muted-foreground" />
+            <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v) => formatDateLabel(v)} className="text-muted-foreground" />
+            <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => formatCompactARS(v)} className="text-muted-foreground" />
             <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "13px" }} formatter={(value) => [formatARS(Number(value ?? 0)), "Comisión"]} />
             <Area type="monotone" dataKey="value" stroke="var(--color-chart-3)" fill="url(#commGradient)" strokeWidth={2} />
           </AreaChart>
@@ -187,10 +188,11 @@ export default function FinanceDashboardPage() {
         <ChartContainer title="Distribución de Estados (Liquidaciones)" isLoading={statusBreakdown.isLoading} error={statusBreakdown.error?.message} isEmpty={statusData.length === 0} dataSources={["payments"]}>
           <ResponsiveContainer width="100%" height={260}>
             <PieChart>
-              <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} dataKey="count" nameKey="status" label={({ name, value }) => `${translateStatus(name ?? "")} (${value})`}>
+              <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={90} minAngle={10} dataKey="count" nameKey="status" label={({ value }) => `${value}`}>
                 {statusData.map((_, idx) => <Cell key={idx} fill={COLORS[idx % COLORS.length]} />)}
               </Pie>
-              <Tooltip />
+              <Tooltip formatter={(value, name) => [value, translateStatus(name as string)]} />
+              <Legend wrapperStyle={{ fontSize: "12px" }} formatter={(value: string) => <span className="text-muted-foreground">{translateStatus(value)}</span>} />
             </PieChart>
           </ResponsiveContainer>
         </ChartContainer>

@@ -100,7 +100,7 @@ export async function getRevenueBySeller(filters?: Partial<FilterState>) {
   const buckets = new Map<string, { revenue: number; seller_profile_id: string }>()
 
   for (const p of approved) {
-    for (const group of p.items_summary) {
+    for (const group of p.items_summary ?? []) {
       const current = buckets.get(group.seller_profile_id) ?? {
         revenue: 0,
         seller_profile_id: group.seller_profile_id,

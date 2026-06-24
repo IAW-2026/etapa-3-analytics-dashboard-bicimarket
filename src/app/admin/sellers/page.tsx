@@ -160,14 +160,14 @@ export default function SellerAnalyticsPage() {
       </ChartContainer>
 
       <Sheet open={!!selectedSeller} onOpenChange={(open) => { if (!open) setSelectedSeller(null) }}>
-        <SheetContent className="w-full overflow-y-auto sm:max-w-md">
+        <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
           <SheetHeader className="pb-0">
             <div className="flex items-start gap-4">
-              <div className="flex size-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary">
+              <div className="flex size-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xl font-bold text-primary">
                 {selectedProfile?.display_name?.slice(0, 2).toUpperCase() ?? "??"}
               </div>
               <div className="min-w-0 flex-1">
-                <SheetTitle className="text-lg leading-tight">{selectedProfile?.display_name ?? "Detalle del Vendedor"}</SheetTitle>
+                <SheetTitle className="text-xl leading-tight">{selectedProfile?.display_name ?? "Detalle del Vendedor"}</SheetTitle>
                 {selectedProfile && (
                   <p className="mt-0.5 truncate text-sm text-muted-foreground">{selectedProfile.legal_name}</p>
                 )}
@@ -183,34 +183,34 @@ export default function SellerAnalyticsPage() {
           {selectedProfile && (
             <div className="mt-6 space-y-6">
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg border bg-muted/40 p-3">
+                <div className="rounded-lg border bg-muted/40 p-4">
                   <p className="text-xs text-muted-foreground">Productos activos</p>
                   <p className="mt-1 text-2xl font-bold">{selectedProfile.product_count}</p>
                 </div>
-                <div className="rounded-lg border bg-muted/40 p-3">
+                <div className="rounded-lg border bg-muted/40 p-4">
                   <p className="text-xs text-muted-foreground">Ingresos del período</p>
-                  <p className="mt-1 text-sm font-bold">{selectedRevenue != null ? formatARS(selectedRevenue) : "—"}</p>
+                  <p className="mt-1 text-2xl font-bold">{selectedRevenue != null ? formatARS(selectedRevenue) : "—"}</p>
                 </div>
-                <div className="col-span-2 rounded-lg border bg-muted/40 p-3">
+                <div className="col-span-2 rounded-lg border bg-muted/40 p-4">
                   <p className="text-xs text-muted-foreground">Miembro desde</p>
-                  <p className="mt-1 text-sm font-medium">
+                  <p className="mt-1 text-base font-medium">
                     {new Date(selectedProfile.created_at).toLocaleDateString("es-AR", { year: "numeric", month: "long", day: "numeric" })}
                   </p>
                 </div>
               </div>
 
-              <div>
-                <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Datos Fiscales</p>
-                <div className="space-y-0 divide-y rounded-lg border">
-                  <div className="p-3">
+              <div className="border-t pt-6">
+                <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Datos Fiscales</p>
+                <div className="divide-y rounded-lg border">
+                  <div className="p-4">
                     <p className="text-xs text-muted-foreground">CUIT / CUIL</p>
                     <p className="mt-0.5 font-mono text-sm font-medium">{selectedProfile.tax_id}</p>
                   </div>
-                  <div className="p-3">
+                  <div className="p-4">
                     <p className="text-xs text-muted-foreground">Condición fiscal</p>
                     <p className="mt-0.5 text-sm capitalize">{selectedProfile.tax_condition.replace(/_/g, " ")}</p>
                   </div>
-                  <div className="p-3">
+                  <div className="p-4">
                     <p className="text-xs text-muted-foreground">CBU / Alias bancario</p>
                     <p className="mt-0.5 break-all font-mono text-xs">{selectedProfile.bank_account_reference}</p>
                   </div>

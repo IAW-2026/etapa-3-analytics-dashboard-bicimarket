@@ -153,7 +153,7 @@ export default function ProductAnalyticsPage() {
         <ChartContainer title="Distribución de Ingresos por Producto" isLoading={topProducts.isLoading} error={topProducts.error?.message} isEmpty={pieData.length === 0} dataSources={["payments"]}>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
-              <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={110} innerRadius={55} label={({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`}>
+              <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={110} innerRadius={55} minAngle={10} label={({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`}>
                 {pieData.map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="transparent" />
                 ))}
@@ -163,9 +163,9 @@ export default function ProductAnalyticsPage() {
                 formatter={(value) => [formatARS(Number(value ?? 0)), "Ingresos"]}
               />
               <Legend
-                wrapperStyle={{ fontSize: "12px" }}
+                wrapperStyle={{ fontSize: "12px", overflow: "visible" }}
                 formatter={(value: string) => (
-                  <span className="text-muted-foreground">{value.length > 25 ? `${value.slice(0, 25)}…` : value}</span>
+                  <span className="text-muted-foreground">{value}</span>
                 )}
               />
             </PieChart>
