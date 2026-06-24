@@ -10,7 +10,7 @@ import { translateStatus } from "@/lib/labels"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useSettlementMetrics, useCommissionTimeSeries, useSettlementStatusBreakdown, usePendingSettlementsBySeller, useRecentSettlements, usePayoutMetrics, useRecentPayments, usePrevSettlementMetrics, usePrevCommissionTimeSeries, usePrevPayoutMetrics } from "@/hooks/use-dashboard-data"
 import { computeTrend } from "@/lib/trends"
-import { formatCompactARS, formatDateLabel } from "@/lib/utils"
+import { formatCompactARS, formatDateLabel, formatDisplayDate } from "@/lib/utils"
 import { calculateHealth, percentage } from "@/lib/health-score"
 
 const COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "var(--color-chart-5)"]
@@ -112,6 +112,7 @@ export default function FinanceDashboardPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Fecha</TableHead>
                 <TableHead>ID</TableHead>
                 <TableHead>Vendedor</TableHead>
                 <TableHead>Bruto</TableHead>
@@ -121,6 +122,7 @@ export default function FinanceDashboardPage() {
             <TableBody>
               {settlements.map((s) => (
                 <TableRow key={s.id}>
+                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatDisplayDate(s.created_at)}</TableCell>
                   <TableCell className="font-mono text-xs">{s.id}</TableCell>
                   <TableCell className="text-sm">{s.seller_name}</TableCell>
                   <TableCell className="text-sm">{formatARS(s.gross_amount_cents)}</TableCell>
@@ -141,6 +143,7 @@ export default function FinanceDashboardPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Fecha</TableHead>
                 <TableHead>ID</TableHead>
                 <TableHead>Método</TableHead>
                 <TableHead>Monto</TableHead>
@@ -150,6 +153,7 @@ export default function FinanceDashboardPage() {
             <TableBody>
               {payments.map((p) => (
                 <TableRow key={p.id}>
+                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatDisplayDate(p.created_at)}</TableCell>
                   <TableCell className="font-mono text-xs">{p.id}</TableCell>
                   <TableCell className="text-sm capitalize">{(p.method ?? "—").replace(/_/g, " ")}</TableCell>
                   <TableCell className="text-sm">{formatARS(p.amount_cents)}</TableCell>

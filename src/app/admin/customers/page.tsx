@@ -43,11 +43,24 @@ export default function CustomerAnalyticsPage() {
   const MONTH_NAMES_ES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
 
   // Agrupa compradores por mes de created_at para el gráfico de adquisición
+  function isoMonth(dateStr: string): string {
+    const d = new Date(dateStr)
+    if (!isNaN(d.getTime())) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
+    }
+    const trimmed = dateStr.replace(/\s+(GM|GMT)[\s\S]*$/, "")
+    const d2 = new Date(trimmed)
+    if (!isNaN(d2.getTime())) {
+      return `${d2.getFullYear()}-${String(d2.getMonth() + 1).padStart(2, "0")}`
+    }
+    return dateStr.slice(0, 7)
+  }
+
   const acquisitionData = (() => {
     const list = buyers.data?.data ?? []
     const buckets = new Map<string, number>()
     for (const b of list) {
-      const month = b.created_at.slice(0, 7) // "YYYY-MM"
+      const month = isoMonth(b.created_at)
       buckets.set(month, (buckets.get(month) ?? 0) + 1)
     }
     const entries = Array.from(buckets.entries()).sort(([a], [b]) => a.localeCompare(b))

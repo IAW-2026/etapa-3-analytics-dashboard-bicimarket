@@ -7,9 +7,19 @@ import { ChartContainer } from "@/components/analytics/chart-container"
 import { SectionHeader } from "@/components/analytics/section-header"
 import { usePaymentMetrics, useRevenueTimeSeries, useRevenueByDayOfWeek, useRevenueByMethod, useRevenueBySeller, usePrevPaymentMetrics, usePrevRevenueTotal } from "@/hooks/use-dashboard-data"
 import { computeTrend } from "@/lib/trends"
-import { translateMethod } from "@/lib/labels"
+import { translateMethod, translateStatus } from "@/lib/labels"
 import { formatCompactARS, formatDateLabel } from "@/lib/utils"
 import { calculateHealth, trendHealth } from "@/lib/health-score"
+import { useQuery } from "@tanstack/react-query"
+import * as paymentsApi from "@/lib/api/payments"
+
+const STATUS_COLORS: Record<string, string> = {
+  approved: "var(--color-chart-1)",
+  rejected: "var(--color-chart-4)",
+  cancelled: "var(--color-chart-5)",
+  refunded: "var(--color-chart-3)",
+  pending: "var(--color-chart-2)",
+}
 
 const COLORS = ["var(--color-chart-1)", "var(--color-chart-2)", "var(--color-chart-3)", "var(--color-chart-4)", "var(--color-chart-5)"]
 
@@ -26,6 +36,20 @@ export default function SalesAnalyticsPage() {
   const topSellers = useRevenueBySeller()
   const prevMetrics = usePrevPaymentMetrics()
   const prevRevenue = usePrevRevenueTotal()
+
+  const { data: statusBreakdown } = useQuery({
+    queryKey: ["paymentStatusBreakdown"],
+    queryFn: async () => {
+      const response = await paymentsApi.getPayments({ limit: 100 })
+      const statusCounts = new Map<string, number>()
+      for (const p of response.data) {
+        statusCounts.set(p.status, (statusCounts.get(p.status) ?? 0) + 1)
+      }
+      return Array.from(statusCounts.entries())
+        .map(([status, count]) => ({ status, count }))
+        .sort((a, b) => b.count - a.count)
+    },
+  })
 
   const revenueData = revenue.data ?? []
   const totalRevenue = revenueData.reduce((s, p) => s + p.value, 0)
@@ -73,6 +97,44 @@ export default function SalesAnalyticsPage() {
         <KpiCard label="Ticket Promedio" value={metrics.data ? formatARS(metrics.data.avg_order_cents) : "—"} trend={ticketTrend ? { value: ticketTrend.label, direction: ticketTrend.direction } : undefined} isLoading={metrics.isLoading} dataSources={["payments"]} />
         <KpiCard label="Crecimiento" value={ingresosTrend?.label ?? "—"} trend={ingresosTrend ? { value: ingresosTrend.label, direction: ingresosTrend.direction } : undefined} isLoading={metrics.isLoading} dataSources={["payments"]} />
       </div>
+
+      {statusBreakdown && statusBreakdown.length > 0 && (
+        <ChartContainer title="Distribución de Estados de Pago" dataSources={["payments"]}>
+          <div className="space-y-2">
+            <div className="flex h-6 w-full overflow-hidden rounded-full">
+              {(() => {
+                const totalStatus = statusBreakdown.reduce((s, e) => s + e.count, 0)
+                return statusBreakdown.map((e) => (
+                  <div
+                    key={e.status}
+                    className="h-full transition-all"
+                    style={{
+                      width: `${(e.count / totalStatus) * 100}%`,
+                      backgroundColor: STATUS_COLORS[e.status] ?? "var(--color-chart-5)",
+                    }}
+                  />
+                ))
+              })()}
+            </div>
+            <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+              {statusBreakdown.map((e) => {
+                const totalStatus = statusBreakdown.reduce((s, e) => s + e.count, 0)
+                return (
+                  <div key={e.status} className="flex items-center gap-2">
+                    <span
+                      className="inline-block size-2.5 rounded-full"
+                      style={{ backgroundColor: STATUS_COLORS[e.status] ?? "var(--color-chart-5)" }}
+                    />
+                    <span className="text-muted-foreground">{translateStatus(e.status)}</span>
+                    <span className="font-medium">{e.count.toLocaleString("es-AR")}</span>
+                    <span className="text-muted-foreground">({((e.count / totalStatus) * 100).toFixed(1)}%)</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </ChartContainer>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">

@@ -22,3 +22,37 @@ export function formatDateLabel(dateStr: string): string {
   if (isNaN(d.getTime())) return dateStr
   return d.toLocaleDateString("es-AR", { day: "2-digit", month: "short" })
 }
+
+function parseDashboardDate(dateStr: string): Date {
+  const d = new Date(dateStr)
+  if (!isNaN(d.getTime())) return d
+  const trimmed = dateStr.replace(/\s+(GM|GMT)[\s\S]*$/, "")
+  if (trimmed !== dateStr) {
+    const d2 = new Date(trimmed)
+    if (!isNaN(d2.getTime())) return d2
+  }
+  return d
+}
+
+export function formatDisplayDate(dateStr: string | undefined | null): string {
+  if (!dateStr) return "—"
+  const d = parseDashboardDate(dateStr)
+  if (isNaN(d.getTime())) return dateStr
+  return d.toLocaleDateString("es-AR", {
+    weekday: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+  })
+}
+
+export function formatISODate(dateStr: string | undefined | null): string {
+  if (!dateStr) return "—"
+  const d = parseDashboardDate(dateStr)
+  if (isNaN(d.getTime())) return dateStr
+  return d.toLocaleDateString("es-AR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+}

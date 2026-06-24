@@ -218,8 +218,12 @@ export function useTopProductsByRevenue() {
       for (const p of approved) {
         for (const group of p.items_summary ?? []) {
           for (const item of group.items ?? []) {
+            const productName =
+              item.product_name_snapshot && item.product_name_snapshot !== "Producto"
+                ? item.product_name_snapshot
+                : item.product_id
             const current = productBuckets.get(item.product_id) ?? {
-              name: item.product_name_snapshot,
+              name: productName,
               revenue: 0,
               units: 0,
             }
