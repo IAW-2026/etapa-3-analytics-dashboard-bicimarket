@@ -104,6 +104,7 @@ export default function CustomerAnalyticsPage() {
   })()
 
   const topBuyers = [...(buyers.data?.data ?? [])]
+    .filter((b) => b.orders_count > 0)
     .sort((a, b) => b.orders_count - a.orders_count)
     .slice(0, 10)
 

@@ -126,8 +126,7 @@ export default function SalesAnalyticsPage() {
                       style={{ backgroundColor: STATUS_COLORS[e.status] ?? "var(--color-chart-5)" }}
                     />
                     <span className="text-muted-foreground">{translateStatus(e.status)}</span>
-                    <span className="font-medium">{e.count.toLocaleString("es-AR")}</span>
-                    <span className="text-muted-foreground">({((e.count / totalStatus) * 100).toFixed(1)}%)</span>
+                    <span className="font-medium">{((e.count / totalStatus) * 100).toFixed(1)}%</span>
                   </div>
                 )
               })}

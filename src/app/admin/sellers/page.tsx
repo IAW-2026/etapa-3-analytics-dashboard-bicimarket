@@ -53,6 +53,7 @@ export default function SellerAnalyticsPage() {
   const sellersNeedAction = sellerHealth && ["urgent", "alert", "attention"].includes(sellerHealth.status)
 
   const sellerList = sellers.data?.data ?? []
+  const topProductSellers = [...sellerList].sort((a, b) => b.product_count - a.product_count).slice(0, 10)
   const selectedProfile = selectedSeller ? sellerList.find((s) => s.id === selectedSeller) : null
   const selectedRevenue = selectedSeller ? sellerData.find((s) => s.seller_profile_id === selectedSeller)?.revenue_cents : null
 
@@ -92,26 +93,28 @@ export default function SellerAnalyticsPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ChartContainer title="Ranking de Vendedores (por Ingresos)" isLoading={topSellers.isLoading} error={topSellers.error?.message} isEmpty={sellerData.length === 0} dataSources={["payments", "seller"]}>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-8">#</TableHead>
-                <TableHead>Vendedor</TableHead>
-                <TableHead>Ingresos</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sellerData.map((seller, idx) => (
-                <TableRow key={seller.seller_profile_id} className="cursor-pointer" onClick={() => setSelectedSeller(seller.seller_profile_id)}>
-                  <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
-                  <TableCell className="text-sm font-medium">{seller.seller_name}</TableCell>
-                  <TableCell className="text-sm">{formatARS(seller.revenue_cents)}</TableCell>
-                  <TableCell className="text-right text-xs text-primary">Ver</TableCell>
+          <div className="max-h-[650px] overflow-y-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="sticky top-0 z-10 w-8 bg-card">#</TableHead>
+                  <TableHead className="sticky top-0 z-10 bg-card">Vendedor</TableHead>
+                  <TableHead className="sticky top-0 z-10 bg-card">Ingresos</TableHead>
+                  <TableHead className="sticky top-0 z-10 bg-card text-right">Acciones</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {sellerData.map((seller, idx) => (
+                  <TableRow key={seller.seller_profile_id} className="cursor-pointer" onClick={() => setSelectedSeller(seller.seller_profile_id)}>
+                    <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
+                    <TableCell className="text-sm font-medium">{seller.seller_name}</TableCell>
+                    <TableCell className="text-sm">{formatARS(seller.revenue_cents)}</TableCell>
+                    <TableCell className="text-right text-xs text-primary">Ver</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </ChartContainer>
 
         <div className="grid gap-6">
@@ -126,14 +129,14 @@ export default function SellerAnalyticsPage() {
             </ResponsiveContainer>
           </ChartContainer>
 
-          <ChartContainer title="Productos por Vendedor" isLoading={sellers.isLoading} isEmpty={sellerList.length === 0} dataSources={["seller"]}>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={sellerList.map((s) => ({ name: s.display_name, count: s.product_count }))} layout="vertical">
+          <ChartContainer title="Top 10 Productos por Vendedor" isLoading={sellers.isLoading} isEmpty={topProductSellers.length === 0} dataSources={["seller"]}>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={topProductSellers.map((s) => ({ name: s.display_name, count: s.product_count }))} margin={{ top: 12, right: 8, left: -16, bottom: 48 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis type="number" tick={{ fontSize: 11 }} className="text-muted-foreground" />
-                <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} className="text-muted-foreground" width={90} />
+                <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-45} textAnchor="end" className="text-muted-foreground" height={60} interval={0} />
+                <YAxis tick={{ fontSize: 11 }} className="text-muted-foreground" />
                 <Tooltip contentStyle={{ borderRadius: "8px", fontSize: "13px" }} />
-                <Bar dataKey="count" fill="var(--color-chart-4)" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="count" fill="var(--color-chart-4)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
